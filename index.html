@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مركز الياقوت التعليمي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* تخصيص الألوان بناءً على الشعار */
+        .bg-yaqout-blue { background-color: #003366; } /* لون الماسة والكتاب */
+        .text-yaqout-gold { color: #D4AF37; } /* لون الإطار الذهبي والنجوم */
+        .border-yaqout-gold { border-color: #D4AF37; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- الهيدر والشعار -->
+    <header class="bg-yaqout-blue p-6 shadow-md text-center rounded-b-3xl border-b-4 border-yaqout-gold">
+        <!-- إدراج الشعار باحترافية -->
+        <img src="image_6633be.png" alt="شعار مركز الياقوت" class="w-32 h-32 mx-auto drop-shadow-lg object-contain bg-white rounded-full p-2 border-2 border-yaqout-gold">
+        <h1 class="text-3xl font-bold text-white mt-4">مركز الياقوت التعليمي</h1>
+        <p class="text-yaqout-gold mt-1 font-semibold">بناء الأجيال .. نحو التميز</p>
+    </header>
+
+    <main class="p-6 max-w-md mx-auto">
+        <!-- حالة الاتصال -->
+        <div id="networkStatus" class="hidden mb-4 p-3 rounded text-white text-center font-bold"></div>
+
+        <!-- نموذج تسجيل الطالب -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-xl font-bold text-yaqout-blue mb-4">تسجيل بيانات طالب</h2>
+            <form id="studentForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 mb-1">اسم الطالب رباعي</label>
+                    <input type="text" id="studentName" required class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1">المرحلة الدراسية</label>
+                    <select id="gradeLevel" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
+                        <option value="الابتدائية">الابتدائية (1-6)</option>
+                        <option value="الإعدادية">الإعدادية (7-9)</option>
+                        <option value="الثانوية">الثانوية (10-12)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1">مسار التسجيل</label>
+                    <select id="trackType" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
+                        <option value="تأسيس">تأسيس</option>
+                        <option value="منهج عادي">منهج عادي</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1">الدفعة المالية (شيكل)</label>
+                    <input type="number" id="paymentAmount" required class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
+                </div>
+                <button type="submit" class="w-full bg-yaqout-blue text-white font-bold py-3 rounded hover:bg-blue-800 transition shadow-md border-b-4 border-yaqout-gold">
+                    حفظ البيانات
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = "رابط_تطبيق_الويب_المستخرج_من_جوجل_سكربت_هنا";
+        const studentForm = document.getElementById('studentForm');
+        const networkStatus = document.getElementById('networkStatus');
+        
+        // مصفوفة لتخزين البيانات محلياً (Offline)
+        let offlineQueue = JSON.parse(localStorage.getItem('studentSyncQueue')) || [];
+
+        function updateNetworkStatus() {
+            if (navigator.onLine) {
+                networkStatus.textContent = 'متصل بالإنترنت - جاري المزامنة...';
+                networkStatus.className = 'mb-4 p-2 rounded text-white text-center font-bold bg-green-500 block';
+                syncData();
+                setTimeout(() => networkStatus.classList.add('hidden'), 3000);
+            } else {
+                networkStatus.textContent = 'أنت تعمل الآن (Offline). سيتم حفظ البيانات في الجهاز.';
+                networkStatus.className = 'mb-4 p-2 rounded text-white text-center font-bold bg-red-500 block';
+            }
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        studentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const record = {
+                studentName: document.getElementById('studentName').value,
+                gradeLevel: document.getElementById('gradeLevel').value,
+                trackType: document.getElementById('trackType').value,
+                paymentAmount: document.getElementById('paymentAmount').value
+            };
+
+            if (navigator.onLine) {
+                // إرسال مباشر
+                await sendToServer([record]);
+            } else {
+                // تخزين محلي (Offline)
+                offlineQueue.push(record);
+                localStorage.setItem('studentSyncQueue', JSON.stringify(offlineQueue));
+                alert('تم حفظ البيانات في الهاتف (Offline). سيتم رفعها تلقائياً عند توفر الإنترنت.');
+            }
+            studentForm.reset();
+        });
+
+        async function sendToServer(dataArray) {
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(dataArray)
+                });
+                alert('تمت مزامنة البيانات مع الإدارة بنجاح!');
+            } catch (error) {
+                console.error("Error syncing:", error);
+            }
+        }
+
+        async function syncData() {
+            if (offlineQueue.length > 0) {
+                await sendToServer(offlineQueue);
+                offlineQueue = []; // تفريغ الطابور بعد النجاح
+                localStorage.setItem('studentSyncQueue', JSON.stringify(offlineQueue));
+            }
+        }
+
+        // فحص أولي عند فتح التطبيق
+        updateNetworkStatus();
+    </script>
+</body>
+</html>
