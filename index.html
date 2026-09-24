@@ -6,126 +6,320 @@
     <title>مركز الياقوت التعليمي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* تخصيص الألوان بناءً على الشعار */
-        .bg-yaqout-blue { background-color: #003366; } /* لون الماسة والكتاب */
-        .text-yaqout-gold { color: #D4AF37; } /* لون الإطار الذهبي والنجوم */
+        .bg-yaqout-blue { background-color: #003366; }
+        .text-yaqout-blue { color: #003366; }
+        .bg-yaqout-gold { background-color: #D4AF37; }
+        .text-yaqout-gold { color: #D4AF37; }
         .border-yaqout-gold { border-color: #D4AF37; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    
-    <!-- الهيدر والشعار -->
-    <header class="bg-yaqout-blue p-6 shadow-md text-center rounded-b-3xl border-b-4 border-yaqout-gold">
-        <!-- إدراج الشعار باحترافية -->
-        <img src="image_6633be.png" alt="شعار مركز الياقوت" class="w-32 h-32 mx-auto drop-shadow-lg object-contain bg-white rounded-full p-2 border-2 border-yaqout-gold">
-        <h1 class="text-3xl font-bold text-white mt-4">مركز الياقوت التعليمي</h1>
-        <p class="text-yaqout-gold mt-1 font-semibold">بناء الأجيال .. نحو التميز</p>
+<body class="bg-slate-100 min-h-screen text-gray-800">
+
+    <!-- الهيدر الشعار -->
+    <header class="bg-yaqout-blue pt-6 pb-4 px-4 text-center rounded-b-3xl shadow-lg border-b-4 border-yaqout-gold sticky top-0 z-50">
+        <div class="relative inline-block">
+            <img src="image_6633be.png" alt="شعار مركز الياقوت" class="w-24 h-24 mx-auto object-contain bg-white rounded-full p-2 border-2 border-yaqout-gold shadow-md">
+        </div>
+        <h1 class="text-2xl font-black text-white mt-2">مركز الياقوت التعليمي</h1>
+        <p class="text-yaqout-gold text-xs font-bold tracking-wide mt-1">تأسيس ومنهاج كافة المراحل الدراسية</p>
+        
+        <!-- شريط التبديل بين الشاشات -->
+        <div class="flex justify-center gap-2 mt-4 max-w-sm mx-auto">
+            <button id="tabRegisterBtn" onclick="switchTab('register')" class="flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition">
+                📝 تسجيل طالب
+            </button>
+            <button id="tabAdminBtn" onclick="switchTab('admin')" class="flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition">
+                📊 لوحة الإدارة
+            </button>
+        </div>
     </header>
 
-    <main class="p-6 max-w-md mx-auto">
-        <!-- حالة الاتصال -->
-        <div id="networkStatus" class="hidden mb-4 p-3 rounded text-white text-center font-bold"></div>
+    <main class="p-4 max-w-xl mx-auto pb-12">
+        <!-- شريط حالة الاتصال والمزامنة -->
+        <div id="networkStatus" class="hidden mb-4 p-3 rounded-xl text-xs font-bold text-center shadow-sm"></div>
 
-        <!-- نموذج تسجيل الطالب -->
-        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-            <h2 class="text-xl font-bold text-yaqout-blue mb-4">تسجيل بيانات طالب</h2>
-            <form id="studentForm" class="space-y-4">
-                <div>
-                    <label class="block text-gray-700 mb-1">اسم الطالب رباعي</label>
-                    <input type="text" id="studentName" required class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
+        <!-- 1. شاشة تسجيل طالب جديد -->
+        <section id="registerView" class="block space-y-4">
+            <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-lg font-bold text-yaqout-blue mb-4 flex items-center gap-2 border-b pb-2">
+                    <span>✏️</span> إدخال بيانات الدفعة والطالب
+                </h2>
+                <form id="studentForm" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">اسم الطالب رباعي</label>
+                        <input type="text" id="studentName" required placeholder="أدخل الاسم..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">المرحلة الدراسية</label>
+                            <select id="gradeLevel" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                                <option value="الابتدائية">الابتدائية (1-6)</option>
+                                <option value="الإعدادية">الإعدادية (7-9)</option>
+                                <option value="الثانوية">الثانوية (10-11)</option>
+                                <option value="التوجيهي">التوجيهي (12)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">نوع المسار</label>
+                            <select id="trackType" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                                <option value="تأسيس">تأسيس</option>
+                                <option value="منهج عادي">منهج عادي</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">المبلغ المدفوع (شيكل)</label>
+                        <input type="number" id="paymentAmount" required min="0" placeholder="0" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full bg-yaqout-blue text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition shadow-md border-b-4 border-yaqout-gold active:scale-95">
+                        حفظ السجل
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 2. شاشة لوحة الإدارة والبيانات -->
+        <section id="adminView" class="hidden space-y-4">
+            <!-- بطاقات الإحصائيات -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
+                    <p class="text-xs text-gray-500 font-bold">إجمالي الطلاب</p>
+                    <p id="statTotalStudents" class="text-xl font-black text-yaqout-blue">0</p>
                 </div>
-                <div>
-                    <label class="block text-gray-700 mb-1">المرحلة الدراسية</label>
-                    <select id="gradeLevel" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
-                        <option value="الابتدائية">الابتدائية (1-6)</option>
-                        <option value="الإعدادية">الإعدادية (7-9)</option>
-                        <option value="الثانوية">الثانوية (10-12)</option>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
+                    <p class="text-xs text-gray-500 font-bold">إجمالي المدفوعات</p>
+                    <p id="statTotalPayments" class="text-xl font-black text-emerald-600">0 ₪</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
+                    <p class="text-xs text-gray-500 font-bold">طلاب التأسيس</p>
+                    <p id="statFoundations" class="text-lg font-bold text-amber-600">0</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
+                    <p class="text-xs text-gray-500 font-bold">طلاب المنهج العادي</p>
+                    <p id="statRegular" class="text-lg font-bold text-blue-600">0</p>
+                </div>
+            </div>
+
+            <!-- البحث والفلترة -->
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 space-y-2">
+                <input type="text" id="searchInput" oninput="renderAdminTable()" placeholder="🔍 بحث باسم الطالب..." class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:outline-none">
+                <div class="flex gap-2">
+                    <select id="filterTrack" onchange="renderAdminTable()" class="flex-1 border border-gray-300 rounded-lg p-2 text-xs">
+                        <option value="ALL">جميع المسارات</option>
+                        <option value="تأسيس">تأسيس فقط</option>
+                        <option value="منهج عادي">منهج عادي فقط</option>
                     </select>
+                    <button onclick="fetchRemoteData()" class="bg-slate-100 p-2 rounded-lg text-xs font-bold text-gray-700 hover:bg-slate-200">🔄 تحديث</button>
                 </div>
-                <div>
-                    <label class="block text-gray-700 mb-1">مسار التسجيل</label>
-                    <select id="trackType" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
-                        <option value="تأسيس">تأسيس</option>
-                        <option value="منهج عادي">منهج عادي</option>
-                    </select>
+            </div>
+
+            <!-- جدول الطلاب -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-yaqout-blue text-white text-xs">
+                                <th class="p-2.5">الطالب</th>
+                                <th class="p-2.5">المرحلة</th>
+                                <th class="p-2.5">المسار</th>
+                                <th class="p-2.5">المدفوع</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="text-xs divide-y divide-gray-100">
+                            <!-- يتم الملء ديناميكياً -->
+                        </tbody>
+                    </table>
                 </div>
-                <div>
-                    <label class="block text-gray-700 mb-1">الدفعة المالية (شيكل)</label>
-                    <input type="number" id="paymentAmount" required class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-yaqout-gold">
-                </div>
-                <button type="submit" class="w-full bg-yaqout-blue text-white font-bold py-3 rounded hover:bg-blue-800 transition shadow-md border-b-4 border-yaqout-gold">
-                    حفظ البيانات
-                </button>
-            </form>
-        </div>
+            </div>
+        </section>
     </main>
 
     <script>
-        const API_URL = "رابط_تطبيق_الويب_المستخرج_من_جوجل_سكربت_هنا";
-        const studentForm = document.getElementById('studentForm');
-        const networkStatus = document.getElementById('networkStatus');
-        
-        // مصفوفة لتخزين البيانات محلياً (Offline)
-        let offlineQueue = JSON.parse(localStorage.getItem('studentSyncQueue')) || [];
+        // ضع رابط الـ Web App المستخرج من Apps Script هنا
+        const API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec";
+
+        let offlineQueue = JSON.parse(localStorage.getItem('yaqout_offline_queue')) || [];
+        let studentsCache = JSON.parse(localStorage.getItem('yaqout_students_cache')) || [];
+
+        function switchTab(tab) {
+            const regView = document.getElementById('registerView');
+            const adminView = document.getElementById('adminView');
+            const regBtn = document.getElementById('tabRegisterBtn');
+            const adminBtn = document.getElementById('tabAdminBtn');
+
+            if (tab === 'register') {
+                regView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                regBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition";
+                adminBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition";
+            } else {
+                regView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                adminBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition";
+                regBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition";
+                renderAdminTable();
+                if (navigator.onLine) fetchRemoteData();
+            }
+        }
 
         function updateNetworkStatus() {
+            const netEl = document.getElementById('networkStatus');
             if (navigator.onLine) {
-                networkStatus.textContent = 'متصل بالإنترنت - جاري المزامنة...';
-                networkStatus.className = 'mb-4 p-2 rounded text-white text-center font-bold bg-green-500 block';
-                syncData();
-                setTimeout(() => networkStatus.classList.add('hidden'), 3000);
+                if (offlineQueue.length > 0) {
+                    netEl.textContent = `⚡ متصل - جاري رفع (${offlineQueue.length}) سجلات محشوة أوفلاين...`;
+                    netEl.className = 'mb-4 p-2.5 rounded-xl text-white text-center font-bold bg-amber-500 block';
+                    syncOfflineQueue();
+                } else {
+                    netEl.textContent = '🟢 متصل بالإنترنت';
+                    netEl.className = 'mb-4 p-2 rounded-xl text-white text-center font-bold bg-emerald-600 block';
+                    setTimeout(() => netEl.classList.add('hidden'), 3000);
+                }
             } else {
-                networkStatus.textContent = 'أنت تعمل الآن (Offline). سيتم حفظ البيانات في الجهاز.';
-                networkStatus.className = 'mb-4 p-2 rounded text-white text-center font-bold bg-red-500 block';
+                netEl.textContent = '🔴 تعمل الآن أوفلاين (بدون إنترنت) - سيتم الحفظ محلياً';
+                netEl.className = 'mb-4 p-2.5 rounded-xl text-white text-center font-bold bg-red-500 block';
             }
         }
 
         window.addEventListener('online', updateNetworkStatus);
         window.addEventListener('offline', updateNetworkStatus);
 
-        studentForm.addEventListener('submit', async (e) => {
+        document.getElementById('studentForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const record = {
-                studentName: document.getElementById('studentName').value,
+                studentName: document.getElementById('studentName').value.trim(),
                 gradeLevel: document.getElementById('gradeLevel').value,
                 trackType: document.getElementById('trackType').value,
                 paymentAmount: document.getElementById('paymentAmount').value
             };
 
             if (navigator.onLine) {
-                // إرسال مباشر
-                await sendToServer([record]);
+                await sendRecords([record]);
             } else {
-                // تخزين محلي (Offline)
                 offlineQueue.push(record);
-                localStorage.setItem('studentSyncQueue', JSON.stringify(offlineQueue));
-                alert('تم حفظ البيانات في الهاتف (Offline). سيتم رفعها تلقائياً عند توفر الإنترنت.');
+                localStorage.setItem('yaqout_offline_queue', JSON.stringify(offlineQueue));
+                
+                // تحديث الـ Cache المحلي أيضاً لعرضه فوراً في الإدارة
+                studentsCache.unshift({ ...record, id: "OFFLINE", date: "الان" });
+                localStorage.setItem('yaqout_students_cache', JSON.stringify(studentsCache));
+
+                alert('تم حفظ البيانات بنجاح داخل الهاتف (أوفلاين). ستتم المزامنة فور التوصيل بالإنترنت.');
             }
-            studentForm.reset();
+
+            document.getElementById('studentForm').reset();
+            updateNetworkStatus();
         });
 
-        async function sendToServer(dataArray) {
+        async function sendRecords(records) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(records)
+                });
+                const resData = await response.json();
+                if(resData.status === 'success') {
+                    alert('تم حفظ البيانات ومزامنتها بنجاح!');
+                    fetchRemoteData();
+                }
+            } catch (err) {
+                console.error('فشل الإرسال، حفظ أوفلاين:', err);
+                offlineQueue.push(...records);
+                localStorage.setItem('yaqout_offline_queue', JSON.stringify(offlineQueue));
+            }
+        }
+
+        async function syncOfflineQueue() {
+            if (offlineQueue.length === 0) return;
+            const recordsToSync = [...offlineQueue];
             try {
                 await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify(dataArray)
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(recordsToSync)
                 });
-                alert('تمت مزامنة البيانات مع الإدارة بنجاح!');
-            } catch (error) {
-                console.error("Error syncing:", error);
+                offlineQueue = [];
+                localStorage.removeItem('yaqout_offline_queue');
+                alert('تمت مزامنة جميع البيانات المحفوظة أوفلاين بنجاح!');
+                updateNetworkStatus();
+                fetchRemoteData();
+            } catch (err) {
+                console.error("خطأ المزامنة:", err);
             }
         }
 
-        async function syncData() {
-            if (offlineQueue.length > 0) {
-                await sendToServer(offlineQueue);
-                offlineQueue = []; // تفريغ الطابور بعد النجاح
-                localStorage.setItem('studentSyncQueue', JSON.stringify(offlineQueue));
+        async function fetchRemoteData() {
+            if (!navigator.onLine) return;
+            try {
+                const res = await fetch(API_URL);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    studentsCache = json.data;
+                    localStorage.setItem('yaqout_students_cache', JSON.stringify(studentsCache));
+                    renderAdminTable();
+                }
+            } catch (err) {
+                console.error("خطأ جلب البيانات:", err);
             }
         }
 
-        // فحص أولي عند فتح التطبيق
+        function renderAdminTable() {
+            const tbody = document.getElementById('studentsTableBody');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const trackFilter = document.getElementById('filterTrack').value;
+
+            tbody.innerHTML = '';
+
+            let totalPay = 0;
+            let foundCount = 0;
+            let regCount = 0;
+
+            const filtered = studentsCache.filter(s => {
+                const matchSearch = s.studentName.toLowerCase().includes(search);
+                const matchTrack = trackFilter === 'ALL' || s.trackType === trackFilter;
+                return matchSearch && matchTrack;
+            });
+
+            // حساب الإحصائيات الكلية
+            studentsCache.forEach(s => {
+                totalPay += Number(s.paymentAmount) || 0;
+                if (s.trackType === 'تأسيس') foundCount++;
+                if (s.trackType === 'منهج عادي') regCount++;
+            });
+
+            document.getElementById('statTotalStudents').textContent = studentsCache.length;
+            document.getElementById('statTotalPayments').textContent = totalPay + ' ₪';
+            document.getElementById('statFoundations').textContent = foundCount;
+            document.getElementById('statRegular').textContent = regCount;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-400">لا توجد بيانات للعرض</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                
+                const trackBadge = s.trackType === 'تأسيس' 
+                    ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">تأسيس</span>`
+                    : `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">منهج عادي</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-gray-800">${s.studentName}</td>
+                    <td class="p-2.5 text-gray-600">${s.gradeLevel}</td>
+                    <td class="p-2.5">${trackBadge}</td>
+                    <td class="p-2.5 font-black text-emerald-600">${s.paymentAmount} ₪</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // إعداد أولي عند فتح التطبيق
         updateNetworkStatus();
+        renderAdminTable();
     </script>
 </body>
 </html>
