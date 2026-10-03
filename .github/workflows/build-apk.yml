@@ -1,1 +1,52 @@
+name: Build Android APK
 
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # نثبّت Capacitor 6 لأنه يتوافق مع Java 17
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+
+      # ملفات التطبيق موجودة في مجلد www
+      - name: Create Android project
+        run: |
+          npx cap init "Al-Yaqout" com.yaqout.center --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Debug APK
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: YaqoutCenter-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
