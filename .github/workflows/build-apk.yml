@@ -23,16 +23,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # The Android SDK is already installed on GitHub runners.
+      # We only accept its licenses.
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # نثبّت Capacitor 6 لأنه يتوافق مع Java 17
       - name: Install Capacitor
         run: |
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
 
-      # ملفات التطبيق موجودة في مجلد www
       - name: Create Android project
         run: |
           npx cap init "Al-Yaqout" com.yaqout.center --web-dir www
