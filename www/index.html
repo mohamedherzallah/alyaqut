@@ -1,336 +1,74 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مركز الياقوت التعليمي</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .bg-yaqout-blue { background-color: #003366; }
-        .text-yaqout-blue { color: #003366; }
-        .bg-yaqout-gold { background-color: #D4AF37; }
-        .text-yaqout-gold { color: #D4AF37; }
-        .border-yaqout-gold { border-color: #D4AF37; }
-    </style>
-</head>
-<body class="bg-slate-100 min-h-screen text-gray-800">
-
-    <!-- الهيدر الشعار -->
-    <header class="bg-yaqout-blue pt-6 pb-4 px-4 text-center rounded-b-3xl shadow-lg border-b-4 border-yaqout-gold sticky top-0 z-50">
-        <div class="relative inline-block">
-            <img src="image_6633be.png" alt="شعار مركز الياقوت" onerror="this.style.display='none'" class="w-24 h-24 mx-auto object-contain bg-white rounded-full p-2 border-2 border-yaqout-gold shadow-md">
-        </div>
-        <h1 class="text-2xl font-black text-white mt-2">مركز الياقوت التعليمي</h1>
-        <p class="text-yaqout-gold text-xs font-bold tracking-wide mt-1">تأسيس ومنهاج كافة المراحل الدراسية</p>
-        
-        <!-- شريط التبديل بين الشاشات -->
-        <div class="flex justify-center gap-2 mt-4 max-w-sm mx-auto">
-            <button id="tabRegisterBtn" onclick="switchTab('register')" class="flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition">
-                📝 تسجيل طالب
-            </button>
-            <button id="tabAdminBtn" onclick="switchTab('admin')" class="flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition">
-                📊 لوحة الإدارة
-            </button>
-        </div>
-    </header>
-
-    <main class="p-4 max-w-xl mx-auto pb-12">
-        <!-- شريط حالة الاتصال والمزامنة -->
-        <div id="networkStatus" class="hidden mb-4 p-3 rounded-xl text-xs font-bold text-center shadow-sm"></div>
-
-        <!-- 1. شاشة تسجيل طالب جديد -->
-        <section id="registerView" class="block space-y-4">
-            <div class="bg-white p-5 rounded-2xl shadow-md border border-slate-200">
-                <h2 class="text-lg font-bold text-yaqout-blue mb-4 flex items-center gap-2 border-b pb-2">
-                    <span>✏️</span> إدخال بيانات الدفعة والطالب
-                </h2>
-                <form id="studentForm" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">اسم الطالب رباعي</label>
-                        <input type="text" id="studentName" required placeholder="أدخل الاسم..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">المرحلة الدراسية</label>
-                            <select id="gradeLevel" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
-                                <option value="الابتدائية">الابتدائية (1-6)</option>
-                                <option value="الإعدادية">الإعدادية (7-9)</option>
-                                <option value="الثانوية">الثانوية (10-11)</option>
-                                <option value="التوجيهي">التوجيهي (12)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 mb-1">نوع المسار</label>
-                            <select id="trackType" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
-                                <option value="تأسيس">تأسيس</option>
-                                <option value="منهج عادي">منهج عادي</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">المبلغ المدفوع (شيكل)</label>
-                        <input type="number" id="paymentAmount" required min="0" placeholder="0" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none">
-                    </div>
-
-                    <button type="submit" class="w-full bg-yaqout-blue text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition shadow-md border-b-4 border-yaqout-gold active:scale-95">
-                        حفظ السجل
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- 2. شاشة لوحة الإدارة والبيانات -->
-        <section id="adminView" class="hidden space-y-4">
-            <!-- بطاقات الإحصائيات -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
-                    <p class="text-xs text-gray-500 font-bold">إجمالي الطلاب</p>
-                    <p id="statTotalStudents" class="text-xl font-black text-yaqout-blue">0</p>
-                </div>
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
-                    <p class="text-xs text-gray-500 font-bold">إجمالي المدفوعات</p>
-                    <p id="statTotalPayments" class="text-xl font-black text-emerald-600">0 ₪</p>
-                </div>
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
-                    <p class="text-xs text-gray-500 font-bold">طلاب التأسيس</p>
-                    <p id="statFoundations" class="text-lg font-bold text-amber-600">0</p>
-                </div>
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-center">
-                    <p class="text-xs text-gray-500 font-bold">طلاب المنهج العادي</p>
-                    <p id="statRegular" class="text-lg font-bold text-blue-600">0</p>
-                </div>
-            </div>
-
-            <!-- البحث والفلترة -->
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 space-y-2">
-                <input type="text" id="searchInput" oninput="renderAdminTable()" placeholder="🔍 بحث باسم الطالب..." class="w-full border border-gray-300 rounded-lg p-2 text-xs focus:outline-none">
-                <div class="flex gap-2">
-                    <select id="filterTrack" onchange="renderAdminTable()" class="flex-1 border border-gray-300 rounded-lg p-2 text-xs">
-                        <option value="ALL">جميع المسارات</option>
-                        <option value="تأسيس">تأسيس فقط</option>
-                        <option value="منهج عادي">منهج عادي فقط</option>
-                    </select>
-                    <button onclick="fetchRemoteData()" class="bg-slate-100 p-2 rounded-lg text-xs font-bold text-gray-700 hover:bg-slate-200">🔄 تحديث</button>
-                </div>
-            </div>
-
-            <!-- جدول الطلاب -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right border-collapse">
-                        <thead>
-                            <tr class="bg-yaqout-blue text-white text-xs">
-                                <th class="p-2.5">الطالب</th>
-                                <th class="p-2.5">المرحلة</th>
-                                <th class="p-2.5">المسار</th>
-                                <th class="p-2.5">المدفوع</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsTableBody" class="text-xs divide-y divide-gray-100">
-                            <!-- يتم الملء ديناميكياً -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script>
-        // ضع رابط الـ Web App المستخرج من Apps Script هنا
-        const API_URL = "https://script.google.com/macros/s/AKfycbzfzNsRB5_JUeZRiY_m3dZYyxaia6WmTi_M_NSrD7gTLSk_GJ50kcHaMm_3Mwt4uXOsDA/exec";
-        // كلمة سر بسيطة - يجب أن تكون مطابقة تماماً للموجودة في code.gs
-        const SECRET_TOKEN = "Yaqout-1234";
-
-        // حماية من إدخال أكواد داخل الأسماء
-        function esc(v) {
-            return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        }
-
-        let offlineQueue = JSON.parse(localStorage.getItem('yaqout_offline_queue')) || [];
-        let studentsCache = JSON.parse(localStorage.getItem('yaqout_students_cache')) || [];
-
-        function switchTab(tab) {
-            const regView = document.getElementById('registerView');
-            const adminView = document.getElementById('adminView');
-            const regBtn = document.getElementById('tabRegisterBtn');
-            const adminBtn = document.getElementById('tabAdminBtn');
-
-            if (tab === 'register') {
-                regView.classList.remove('hidden');
-                adminView.classList.add('hidden');
-                regBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition";
-                adminBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition";
-            } else {
-                regView.classList.add('hidden');
-                adminView.classList.remove('hidden');
-                adminBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-yaqout-gold text-yaqout-blue shadow transition";
-                regBtn.className = "flex-1 py-2 px-3 rounded-lg font-bold text-sm bg-blue-950 text-white hover:bg-blue-900 shadow transition";
-                renderAdminTable();
-                if (navigator.onLine) fetchRemoteData();
-            }
-        }
-
-        function updateNetworkStatus() {
-            const netEl = document.getElementById('networkStatus');
-            if (navigator.onLine) {
-                if (offlineQueue.length > 0) {
-                    netEl.textContent = `⚡ متصل - جاري رفع (${offlineQueue.length}) سجلات محشوة أوفلاين...`;
-                    netEl.className = 'mb-4 p-2.5 rounded-xl text-white text-center font-bold bg-amber-500 block';
-                    syncOfflineQueue();
-                } else {
-                    netEl.textContent = '🟢 متصل بالإنترنت';
-                    netEl.className = 'mb-4 p-2 rounded-xl text-white text-center font-bold bg-emerald-600 block';
-                    setTimeout(() => netEl.classList.add('hidden'), 3000);
-                }
-            } else {
-                netEl.textContent = '🔴 تعمل الآن أوفلاين (بدون إنترنت) - سيتم الحفظ محلياً';
-                netEl.className = 'mb-4 p-2.5 rounded-xl text-white text-center font-bold bg-red-500 block';
-            }
-        }
-
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-
-        document.getElementById('studentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const record = {
-                studentName: document.getElementById('studentName').value.trim(),
-                gradeLevel: document.getElementById('gradeLevel').value,
-                trackType: document.getElementById('trackType').value,
-                paymentAmount: document.getElementById('paymentAmount').value
-            };
-
-            if (navigator.onLine) {
-                await sendRecords([record]);
-            } else {
-                offlineQueue.push(record);
-                localStorage.setItem('yaqout_offline_queue', JSON.stringify(offlineQueue));
-                
-                // تحديث الـ Cache المحلي أيضاً لعرضه فوراً في الإدارة
-                studentsCache.unshift({ ...record, id: "OFFLINE", date: "الان" });
-                localStorage.setItem('yaqout_students_cache', JSON.stringify(studentsCache));
-
-                alert('تم حفظ البيانات بنجاح داخل الهاتف (أوفلاين). ستتم المزامنة فور التوصيل بالإنترنت.');
-            }
-
-            document.getElementById('studentForm').reset();
-            updateNetworkStatus();
-        });
-
-        async function sendRecords(records) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: SECRET_TOKEN, records: records })
-                });
-                const resData = await response.json();
-                if(resData.status === 'success') {
-                    alert('تم حفظ البيانات ومزامنتها بنجاح!');
-                    fetchRemoteData();
-                } else {
-                    alert('خطأ من السيرفر: ' + resData.message);
-                }
-            } catch (err) {
-                console.error('فشل الإرسال، حفظ أوفلاين:', err);
-                offlineQueue.push(...records);
-                localStorage.setItem('yaqout_offline_queue', JSON.stringify(offlineQueue));
-            }
-        }
-
-        async function syncOfflineQueue() {
-            if (offlineQueue.length === 0) return;
-            const recordsToSync = [...offlineQueue];
-            try {
-                const r = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ token: SECRET_TOKEN, records: recordsToSync })
-                });
-                const rj = await r.json();
-                if (rj.status !== 'success') throw new Error(rj.message);
-                offlineQueue = [];
-                localStorage.removeItem('yaqout_offline_queue');
-                alert('تمت مزامنة جميع البيانات المحفوظة أوفلاين بنجاح!');
-                updateNetworkStatus();
-                fetchRemoteData();
-            } catch (err) {
-                console.error("خطأ المزامنة:", err);
-            }
-        }
-
-        async function fetchRemoteData() {
-            if (!navigator.onLine) return;
-            try {
-                const res = await fetch(API_URL + "?token=" + encodeURIComponent(SECRET_TOKEN));
-                const json = await res.json();
-                if (json.status === 'success') {
-                    studentsCache = json.data;
-                    localStorage.setItem('yaqout_students_cache', JSON.stringify(studentsCache));
-                    renderAdminTable();
-                }
-            } catch (err) {
-                console.error("خطأ جلب البيانات:", err);
-            }
-        }
-
-        function renderAdminTable() {
-            const tbody = document.getElementById('studentsTableBody');
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const trackFilter = document.getElementById('filterTrack').value;
-
-            tbody.innerHTML = '';
-
-            let totalPay = 0;
-            let foundCount = 0;
-            let regCount = 0;
-
-            const filtered = studentsCache.filter(s => {
-                const matchSearch = String(s.studentName || "").toLowerCase().includes(search);
-                const matchTrack = trackFilter === 'ALL' || s.trackType === trackFilter;
-                return matchSearch && matchTrack;
-            });
-
-            // حساب الإحصائيات الكلية
-            studentsCache.forEach(s => {
-                totalPay += Number(s.paymentAmount) || 0;
-                if (s.trackType === 'تأسيس') foundCount++;
-                if (s.trackType === 'منهج عادي') regCount++;
-            });
-
-            document.getElementById('statTotalStudents').textContent = studentsCache.length;
-            document.getElementById('statTotalPayments').textContent = totalPay + ' ₪';
-            document.getElementById('statFoundations').textContent = foundCount;
-            document.getElementById('statRegular').textContent = regCount;
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-400">لا توجد بيانات للعرض</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(s => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition";
-                
-                const trackBadge = s.trackType === 'تأسيس' 
-                    ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">تأسيس</span>`
-                    : `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">منهج عادي</span>`;
-
-                tr.innerHTML = `
-                    <td class="p-2.5 font-bold text-gray-800">${esc(s.studentName)}</td>
-                    <td class="p-2.5 text-gray-600">${esc(s.gradeLevel)}</td>
-                    <td class="p-2.5">${trackBadge}</td>
-                    <td class="p-2.5 font-black text-emerald-600">${esc(s.paymentAmount)} ₪</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // إعداد أولي عند فتح التطبيق
-        updateNetworkStatus();
-        renderAdminTable();
-    </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مركز الياقوت</title>
+<style>
+body{margin:0;font-family:sans-serif;background:#f1f5f9;color:#1e293b}
+header{background:#003366;color:#fff;text-align:center;padding:8px;border-bottom:4px solid #D4AF37;position:sticky;top:0;z-index:9}
+header img{width:52px;height:52px;border-radius:50%;background:#fff;padding:3px;object-fit:contain}
+h1{font-size:17px;margin:3px 0}
+nav{display:flex;gap:4px;margin-top:6px}
+nav button{flex:1;padding:8px 2px;border:0;border-radius:8px;font-size:11px;font-weight:bold;background:#0b2a4f;color:#fff}
+nav button.on{background:#D4AF37;color:#003366}
+main{padding:12px;max-width:560px;margin:auto}
+.c{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 3px #0002;font-size:13px;line-height:1.9}
+.i{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin:3px 0 8px;font-size:14px}
+.b{background:#003366;color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:bold}
+.s{padding:5px 9px;font-size:12px;margin-inline-end:4px}.g{background:#059669}.r{background:#dc2626}
+.row{display:flex;gap:8px}.row>*{flex:1}
+small{color:#64748b}.k{font-weight:bold;color:#003366}
+</style></head><body>
+<header><img src="image_6633be.png" onerror="this.style.display='none'"><h1>مركز الياقوت التعليمي</h1><div id="st" style="font-size:11px"></div><nav id="nv"></nav></header>
+<main id="v"></main><div id="md" style="display:none;position:fixed;inset:0;background:#000a;z-index:99"></div>
+<script>
+const API="https://script.google.com/macros/s/AKfycbyVDm4Ysda7wkCZqmdr433boSg4sFh0HIJBrtaK0p_LNLwBpUyvsvOL6128adr4fTs9Rg/exec",TK="Yaqout-1234";
+const G=[...Array(12)].map((_,i)=>"الصف "+(i+1)),D=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
+const TABS=[["st","👨‍🎓 الطلاب"],["te","👩‍🏫 المعلمون"],["sc","🗓 الجدول"],["pa","💰 المالية"],["se","⚙️ إعدادات"]];
+let tab="st",busy=0,db=JSON.parse(localStorage.yq_db||'{"teachers":[],"students":[],"payments":[],"schedule":[],"settings":[]}'),q=JSON.parse(localStorage.yq_q||'[]');
+const N=v=>Number(v)||0,E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),today=()=>new Date().toISOString().slice(0,10);
+const sum=a=>a.reduce((x,p)=>x+N(p.amount),0),save=()=>{localStorage.yq_db=JSON.stringify(db);localStorage.yq_q=JSON.stringify(q)};
+const S=k=>{const r=db.settings.find(x=>x.id==k);return r?N(r.value):0},P=g=>S("p"+g),pct=()=>db.settings.some(x=>x.id=="pct")?S("pct"):60;
+const tn=id=>(db.teachers.find(t=>t.id==id)||{}).name||"—",TO=s=>db.teachers.map(t=>`<option value="${t.id}"${t.id==s?" selected":""}>${E(t.name)}</option>`).join("");
+const paidS=id=>sum(db.payments.filter(p=>p.type=="student"&&p.refId==id));
+function tStat(t){const ids=db.students.filter(s=>s.teacherId==t.id).map(s=>s.id);const inc=sum(db.payments.filter(p=>p.type=="student"&&ids.includes(p.refId)));return{ids,due:inc*pct()/100,paid:sum(db.payments.filter(p=>p.type=="teacher"&&p.refId==t.id))}}
+function op(t,r,del){const o=del?{t,id:r,del:1}:{t,id:r.id,r},a=db[t],i=a.findIndex(x=>x.id==o.id);
+ if(del){if(i>-1)a.splice(i,1)}else if(i>-1)a[i]=r;else a.push(r);q.push(o);save();render();flush()}
+async function flush(){if(busy||!q.length||!navigator.onLine)return;busy=1;const ops=[...q];
+ try{const j=await(await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:TK,ops})})).json();if(j.status!="success")throw 0;q=q.slice(ops.length);save();busy=0;if(q.length)return flush();await load()}catch(e){busy=0;render()}}
+async function load(){if(!navigator.onLine||q.length)return;try{const j=await(await fetch(API+"?token="+encodeURIComponent(TK))).json();if(j.status=="success"){db=j.data;save();render()}}catch(e){}}
+const del=(t,id)=>confirm("تأكيد الحذف؟")&&op(t,id,1);
+function addC(f){if(db.schedule.some(x=>x.teacherId==f.t.value&&x.day==f.d.value&&x.time==f.tm.value))return alert("تعارض: للمعلم حصة بنفس اليوم والوقت"),false;
+ op("schedule",{id:uid(),teacherId:f.t.value,day:f.d.value,time:f.tm.value,note:f.nt.value});return false}
+function saveSet(f){const p=Math.min(100,Math.max(0,N(f.pct.value))),v=[["pct",p]];for(let i=1;i<=12;i++)v.push(["p"+i,N(f["p"+i].value)]);v.forEach(x=>op("settings",{id:x[0],value:x[1]}));alert("تم الحفظ");return false}
+let qs="",eS="",eT="",mo=today().slice(0,7),RT="";
+const ER=(v,k)=>`<button type=button class="b s r" onclick="${k}='';render()">إلغاء</button>`;
+const SL=()=>db.students.filter(s=>(s.name+(s.parent||"")).includes(qs)).reverse().map(s=>{const p=paidS(s.id),r=N(s.price)-p;return `<div class=c><span class=k>${E(s.name)}</span> <small>${G[s.grade-1]||""} · ${E(s.track)} · ${E(tn(s.teacherId))}</small> ${s.parent?`<a href="tel:${E(s.parent)}">📞</a>`:""}<br>السعر ${N(s.price)} | مدفوع ${p} | <b style="color:${r>0?"#dc2626":"#059669"}">متبقي ${r}</b><br><button class="b s g" onclick="pay('student','${s.id}')">+ دفعة</button><button class="b s" onclick="eS='${s.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('students','${s.id}')">حذف</button></div>`}).join("");
+const TL=()=>db.teachers.filter(t=>(t.name+(t.subject||"")).includes(qs)).map(t=>{const x=tStat(t);return `<div class=c><span class=k>${E(t.name)}</span> <small>${E(t.subject)} ${E(t.phone)}</small><br>الطلاب (${x.ids.length}): <small>${x.ids.map(i=>E((db.students.find(s=>s.id==i)||{}).name)).join("، ")||"—"}</small><br>المستحق ${x.due.toFixed(0)} | المصروف ${x.paid} | <b>الرصيد ${(x.due-x.paid).toFixed(0)}</b><br><button class="b s g" onclick="pay('teacher','${t.id}')">+ صرف</button><button class="b s" onclick="eT='${t.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('teachers','${t.id}')">حذف</button></div>`}).join("");
+function rc(id){const p=db.payments.find(x=>x.id==id),s=db.students.find(x=>x.id==p.refId)||{},d=paidS(s.id);
+ RT=`مركز الياقوت التعليمي\nإيصال قبض رقم ${p.id}\nالتاريخ: ${p.date}\nالطالب: ${s.name}\n${G[s.grade-1]||""}\nالمبلغ: ${N(p.amount)} شيكل\nإجمالي المدفوع: ${d} من ${N(s.price)}\nالمتبقي: ${N(s.price)-d}`;
+ md.style.display="block";md.innerHTML=`<div class=c style="max-width:340px;margin:70px auto;white-space:pre-line;text-align:center"><b>${E(RT)}</b>\n<button class="b s g" onclick="shr()">مشاركة / نسخ</button><button class="b s r" onclick="md.style.display='none'">إغلاق</button></div>`}
+async function shr(){try{if(navigator.share)await navigator.share({text:RT});else{await navigator.clipboard.writeText(RT);alert("تم النسخ")}}catch(e){}}
+const rep=()=>{const m=db.payments.filter(p=>String(p.date).startsWith(mo)),iS=sum(m.filter(p=>p.type=="student")),oT=sum(m.filter(p=>p.type=="teacher")),td=iS*pct()/100;
+ const tr=db.teachers.map(t=>{const ids=db.students.filter(s=>s.teacherId==t.id).map(s=>s.id),i=sum(m.filter(p=>p.type=="student"&&ids.includes(p.refId))),o=sum(m.filter(p=>p.type=="teacher"&&p.refId==t.id));return `<br>${E(t.name)}: مستحق ${(i*pct()/100).toFixed(0)} | مصروف ${o}`}).join("");
+ const un=db.students.map(s=>({s,r:N(s.price)-paidS(s.id)})).filter(x=>x.r>0).map(x=>`<br>${E(x.s.name)} — ${x.r} ₪ ${x.s.parent?`<a href="tel:${E(x.s.parent)}">📞</a>`:""}`).join("");
+ return `<div class=c><b>تقرير شهري</b><input class=i type=month value="${mo}" onchange="mo=this.value;rp.innerHTML=rep()">إيراد: ${iS} | حصة المعلمين: ${td.toFixed(0)} | حصة الإدارة: ${(iS-td).toFixed(0)}<br>مصروف للمعلمين: ${oT} | صافي الشهر: <b>${iS-oT}</b><br><b>المعلمون:</b>${tr||" —"}<br><b>طلاب عليهم متبقي:</b>${un||" —"}</div>`};
+function addS(f){const o=db.students.find(s=>s.id==eS)||{},id=o.id||uid();eS="";op("students",{id,date:o.date||today(),name:f.n.value.trim(),grade:f.g.value,track:f.k.value,teacherId:f.t.value,price:N(f.p.value),parent:f.pp.value});return false}
+function addT(f){const o=db.teachers.find(t=>t.id==eT)||{},id=o.id||uid();eT="";op("teachers",{id,name:f.n.value.trim(),phone:f.ph.value,subject:f.sb.value});return false}
+function pay(type,ref){const a=N(prompt("المبلغ (شيكل):"));if(a>0){const id=uid();op("payments",{id,date:today(),type,refId:ref,amount:a,note:""});if(type=="student")rc(id)}}
+const V={
+st(){const e=db.students.find(s=>s.id==eS)||{};return `<form class=c onsubmit="return addS(this)"><b>${e.id?"تعديل طالب":"تسجيل طالب"}</b><input class=i name=n required placeholder="اسم الطالب" value="${E(e.name)}">
+<div class=row><select class=i name=g onchange="this.form.p.value=P(this.value)">${G.map((g,i)=>`<option value=${i+1}${e.grade==i+1?" selected":""}>${g}</option>`).join("")}</select><select class=i name=k><option>تأسيس</option><option${e.track=="منهج عادي"?" selected":""}>منهج عادي</option></select></div>
+<select class=i name=t required>${TO(e.teacherId)||'<option value="">أضف معلماً أولاً</option>'}</select><div class=row><input class=i name=p type=number min=0 value="${e.id?N(e.price):P(1)}" placeholder="السعر"><input class=i name=pp value="${E(e.parent)}" placeholder="هاتف ولي الأمر"></div><button class=b>حفظ</button>${e.id?ER(0,"eS"):""}</form>
+<input class=i placeholder="🔍 بحث..." oninput="qs=this.value;ls.innerHTML=SL()"><div id=ls>${SL()}</div>`},
+te(){const e=db.teachers.find(t=>t.id==eT)||{};return `<form class=c onsubmit="return addT(this)"><b>${e.id?"تعديل معلم":"إضافة معلم"}</b><input class=i name=n required placeholder="الاسم" value="${E(e.name)}"><div class=row><input class=i name=ph placeholder="الهاتف" value="${E(e.phone)}"><input class=i name=sb placeholder="المادة" value="${E(e.subject)}"></div><button class=b>حفظ</button>${e.id?ER(0,"eT"):""}</form>
+<input class=i placeholder="🔍 بحث..." oninput="qs=this.value;ls.innerHTML=TL()"><div id=ls>${TL()}</div>`},
+sc(){return `<form class=c onsubmit="return addC(this)"><b>إضافة حصة</b><select class=i name=t required>${TO()}</select><div class=row><select class=i name=d>${D.map(d=>`<option>${d}</option>`).join("")}</select><input class=i name=tm type=time required></div><input class=i name=nt placeholder="ملاحظة (صف/مادة/قاعة)"><button class=b>حفظ</button></form>`+
+ D.map(d=>{const l=db.schedule.filter(x=>x.day==d).sort((a,b)=>String(a.time).localeCompare(b.time));return l.length?`<div class=c><b class=k>${d}</b>`+l.map(x=>`<br>${E(x.time)} — ${E(tn(x.teacherId))} <small>${E(x.note)}</small> <button class="b s r" onclick="del('schedule','${x.id}')">✕</button>`).join("")+"</div>":""}).join("")},
+pa(){const iS=sum(db.payments.filter(p=>p.type=="student")),oT=sum(db.payments.filter(p=>p.type=="teacher")),td=iS*pct()/100;
+ return `<div id=rp>${rep()}</div><div class=c>إيراد الطلاب (الكل): <b>${iS}</b><br>حصة المعلمين (${pct()}%): <b>${td.toFixed(0)}</b><br>حصة الإدارة (${100-pct()}%): <b>${(iS-td).toFixed(0)}</b><br>المصروف للمعلمين: <b>${oT}</b><br>صافي الصندوق: <b>${iS-oT}</b></div>`+
+ db.payments.slice().reverse().map(p=>{const s=p.type=="student";return `<div class=c>${s?"🟢 من طالب":"🔴 لمعلم"}: <span class=k>${E(s?(db.students.find(x=>x.id==p.refId)||{}).name:tn(p.refId))}</span> — ${N(p.amount)} ₪ <small>${E(p.date)}</small> ${s?`<button class="b s g" onclick="rc('${p.id}')">🧾</button>`:""}<button class="b s r" onclick="del('payments','${p.id}')">✕</button></div>`}).join("")},
+se(){return `<form class=c onsubmit="return saveSet(this)"><b>نسبة المعلم %</b><input class=i name=pct type=number min=0 max=100 value="${pct()}" oninput="ap.textContent=100-this.value"><small>نسبة الإدارة: <span id=ap>${100-pct()}</span>%</small><br><br><b>سعر كل صف (شيكل)</b>`+
+ G.map((g,i)=>`<label><small>${g}</small><input class=i name=p${i+1} type=number min=0 value="${P(i+1)}"></label>`).join("")+`<button class=b>حفظ الإعدادات</button></form>`}};
+function render(){nv.innerHTML=TABS.map(t=>`<button class="${t[0]==tab?"on":""}" onclick="tab='${t[0]}';qs='';eS='';eT='';render()">${t[1]}</button>`).join("");
+ st.textContent=!navigator.onLine?"🔴 أوفلاين":q.length?"⏳ بانتظار المزامنة: "+q.length:"🟢 متزامن";
+ if(!document.activeElement||!/INPUT|SELECT/.test(document.activeElement.tagName)||document.activeElement.form==null)v.innerHTML=V[tab]()}
+addEventListener("online",()=>{flush();load()});addEventListener("offline",render);
+render();flush();load();
+</script></body></html>
