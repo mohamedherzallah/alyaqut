@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
-    <meta charset="UTF-8" /> 
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>مركز الياقوت</title>
+    <title>مركز الياقوت التعليمي</title>
     <style>
       body {
         margin: 0;
@@ -55,7 +55,7 @@
       }
       main {
         padding: 12px;
-        max-width: 560px;
+        max-width: 580px;
         margin: auto;
       }
       .c {
@@ -131,10 +131,18 @@
         justify-content: space-between;
         align-items: center;
         border-bottom: 1px solid #e2e8f0;
-        padding: 4px 0;
+        padding: 5px 0;
       }
       .pay-item:last-child {
         border-bottom: 0;
+      }
+      .method-tag {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
       }
     </style>
   </head>
@@ -187,9 +195,12 @@
         busy = 0,
         db = JSON.parse(
           localStorage.yq_db ||
-            '{"teachers":[],"students":[],"payments":[],"schedule":[],"settings":[]}',
+            '{"teachers":[],"students":[],"payments":[],"schedule":[],"expenses":[],"attendance":[],"settings":[]}',
         ),
         q = JSON.parse(localStorage.yq_q || "[]");
+
+      if (!db.expenses) db.expenses = [];
+      if (!db.attendance) db.attendance = [];
 
       const N = (v) => Number(v) || 0,
         E = (s) =>
@@ -212,7 +223,8 @@
           return r ? N(r.value) : 0;
         },
         P = (g) => S("p" + g),
-        pct = () => (db.settings.some((x) => x.id == "pct") ? S("pct") : 60);
+        pct = () => (db.settings.some((x) => x.id == "pct") ? S("pct") : 60),
+        durationMins = () => (db.settings.some((x) => x.id == "duration") ? S("duration") : 60);
 
       const tn = (id) =>
           (db.teachers.find((t) => t.id == id) || {}).name || "—",
@@ -229,6 +241,14 @@
 
       const studentPayments = (id) =>
         db.payments.filter((p) => p.type == "student" && p.refId == id);
+
+      function calcEndTime(st, mins) {
+        if (!st) return "";
+        const [h, m] = st.split(":").map(Number);
+        const d = new Date();
+        d.setHours(h, m + Number(mins || 60));
+        return d.toTimeString().slice(0, 5);
+      }
 
       function tStat(t) {
         const ids = db.students
@@ -294,6 +314,8 @@
           ).json();
           if (j.status == "success") {
             db = j.data;
+            if (!db.expenses) db.expenses = [];
+            if (!db.attendance) db.attendance = [];
             save();
             render();
           }
@@ -308,23 +330,37 @@
             (x) =>
               x.teacherId == f.t.value &&
               x.day == f.d.value &&
-              x.time == f.tm.value,
+              x.startTime == f.tm.value,
           )
         )
           return alert("تعارض: للمعلم حصة بنفس اليوم والوقت"), false;
         op("schedule", {
           id: uid(),
           teacherId: f.t.value,
+          grade: f.g.value,
           day: f.d.value,
-          time: f.tm.value,
+          startTime: f.tm.value,
           note: f.nt.value,
+        });
+        return false;
+      }
+
+      function addExpense(f) {
+        op("expenses", {
+          id: uid(),
+          date: f.dt.value || today(),
+          title: f.tl.value.trim(),
+          amount: N(f.am.value),
+          category: f.cat.value,
+          note: f.nt.value.trim(),
         });
         return false;
       }
 
       function saveSet(f) {
         const p = Math.min(100, Math.max(0, N(f.pct.value))),
-          v = [["pct", p]];
+          dur = Math.max(15, N(f.duration.value)),
+          v = [["pct", p], ["duration", dur]];
         for (let i = 1; i <= 12; i++) v.push(["p" + i, N(f["p" + i].value)]);
         v.forEach((x) => op("settings", { id: x[0], value: x[1] }));
         alert("تم حفظ الإعدادات بنجاح");
@@ -354,7 +390,7 @@
               <br>السعر: <b>${N(s.price)} ₪</b> | مدفوع: ${p} ₪ | <b style="color:${r > 0 ? "#dc2626" : "#059669"}">متبقي: ${r} ₪</b>
               ${s.note ? `<div class="badge-note">📝 ملاحظة: ${E(s.note)}</div>` : ""}
               <div style="margin-top:6px">
-                <button class="b s g" onclick="pay('student','${s.id}')">+ دفعة</button>
+                <button class="b s g" onclick="payModal('student','${s.id}')">+ دفعة</button>
                 <button class="b s" onclick="eS='${s.id}';scrollTo(0,0);render()">تعديل</button>
                 <button class="b s r" onclick="del('students','${s.id}')">حذف</button>
               </div>
@@ -367,9 +403,115 @@
           .filter((t) => (t.name + (t.subject || "")).includes(qs))
           .map((t) => {
             const x = tStat(t);
-            return `<div class=c><span class=k>${E(t.name)}</span> <small>${E(t.subject)} ${E(t.phone)}</small><br>الطلاب (${x.ids.length}): <small>${x.ids.map((i) => E((db.students.find((s) => s.id == i) || {}).name)).join("، ") || "—"}</small><br>المستحق ${x.due.toFixed(0)} | المصروف ${x.paid} | <b>الرصيد ${(x.due - x.paid).toFixed(0)}</b><br><button class="b s g" onclick="pay('teacher','${t.id}')">+ صرف</button><button class="b s" onclick="eT='${t.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('teachers','${t.id}')">حذف</button></div>`;
+            return `<div class=c>
+              <span class=k>${E(t.name)}</span> <small>${E(t.subject)} ${E(t.phone)} ${t.startDate ? `(تاريخ البدء: ${t.startDate})` : ""}</small>
+              <br>الطلاب (${x.ids.length}): <small>${x.ids.map((i) => E((db.students.find((s) => s.id == i) || {}).name)).join("، ") || "—"}</small>
+              <br>المستحق: ${x.due.toFixed(0)} ₪ | المصروف: ${x.paid} ₪ | <b>الرصيد: ${(x.due - x.paid).toFixed(0)} ₪</b>
+              <br><button class="b s g" onclick="payModal('teacher','${t.id}')">+ صرف</button><button class="b s" onclick="eT='${t.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('teachers','${t.id}')">حذف</button>
+            </div>`;
           })
           .join("");
+
+      function payModal(type, ref) {
+        md.style.display = "block";
+        md.innerHTML = `<div class=c style="max-width:360px;margin:50px auto">
+          <b style="color:#003366;font-size:15px">💳 تسجيل دفعة مالية جديدة</b>
+          <form onsubmit="return confirmPay('${type}','${ref}',this)">
+            <label><small>المبلغ (شيكل):</small><input class=i type=number min=1 required name=am placeholder="أدخل المبلغ"></label>
+            <label><small>طريقة الدفع:</small>
+              <select class=i name=mth required>
+                <option value="كاش">كاش 💵</option>
+                <option value="تحويل بنكي">تحويل بنكي 🏦</option>
+                <option value="محفظة جوال باي">محفظة جوال باي 📱</option>
+                <option value="محفظة بال باي">محفظة بال باي 💳</option>
+                <option value="أخرى">أخرى 📝</option>
+              </select>
+            </label>
+            <label><small>ملاحظة على الدفعة (اختياري):</small><input class=i name=nt placeholder="مثال: قسط أول / رسوم التسجيل"></label>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="b s g" style="flex:1">تأكيد الحفظ</button>
+              <button type=button class="b s r" onclick="md.style.display='none'">إلغاء</button>
+            </div>
+          </form>
+        </div>`;
+      }
+
+      function confirmPay(type, ref, f) {
+        const a = N(f.am.value);
+        if (a > 0) {
+          const id = uid();
+          op("payments", {
+            id,
+            date: today(),
+            type,
+            refId: ref,
+            amount: a,
+            method: f.mth.value,
+            note: f.nt.value.trim(),
+          });
+          md.style.display = "none";
+          if (type == "student") rc(id);
+        }
+        return false;
+      }
+
+      function openAttendance(schId) {
+        const sch = db.schedule.find((s) => s.id == schId);
+        if (!sch) return;
+        const students = db.students.filter(
+          (s) => s.teacherId == sch.teacherId && s.grade == sch.grade,
+        );
+        const attDate = today();
+
+        const rowsHtml = students.length
+          ? students
+              .map((s) => {
+                const rec = db.attendance.find(
+                  (a) => a.scheduleId == schId && a.studentId == s.id && a.date == attDate,
+                );
+                const st = rec ? rec.status : "حاضر";
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee">
+                  <span>${E(s.name)}</span>
+                  <select id="att_${s.id}" class=i style="width:100px;margin:0">
+                    <option value="حاضر"${st == "حاضر" ? " selected" : ""}>🟢 حاضر</option>
+                    <option value="غائب"${st == "غائب" ? " selected" : ""}>🔴 غائب</option>
+                  </select>
+                </div>`;
+              })
+              .join("")
+          : `<div style="color:#64748b;padding:10px 0">لا يوجد طلاب مسجلين لهذه المادة للصف المحدد</div>`;
+
+        md.style.display = "block";
+        md.innerHTML = `<div class=c style="max-width:380px;margin:40px auto">
+          <b>📋 كشف الحضور والغياب (${attDate})</b><br>
+          <small>المعلم: ${E(tn(sch.teacherId))} | ${G[(sch.grade || 1) - 1]}</small>
+          <div style="max-height:280px;overflow-y:auto;margin:10px 0">${rowsHtml}</div>
+          ${students.length ? `<button class="b s g" onclick="saveAtt('${schId}','${attDate}')">حفظ الكشف</button>` : ""}
+          <button class="b s r" onclick="md.style.display='none'">إغلاق</button>
+        </div>`;
+      }
+
+      function saveAtt(schId, date) {
+        const sch = db.schedule.find((s) => s.id == schId);
+        const students = db.students.filter(
+          (s) => s.teacherId == sch.teacherId && s.grade == sch.grade,
+        );
+        students.forEach((s) => {
+          const val = document.getElementById("att_" + s.id).value;
+          const ex = db.attendance.find(
+            (a) => a.scheduleId == schId && a.studentId == s.id && a.date == date,
+          );
+          op("attendance", {
+            id: ex ? ex.id : uid(),
+            date,
+            scheduleId: schId,
+            studentId: s.id,
+            status: val,
+          });
+        });
+        alert("تم حفظ كشف الحضور بنجاح");
+        md.style.display = "none";
+      }
 
       function rc(id) {
         const p = db.payments.find((x) => x.id == id);
@@ -383,17 +525,18 @@
 التاريخ: ${p.date}
 الطالب: ${s.name || "—"}
 الصف: ${G[(s.grade || 1) - 1] || "—"}
-دفعة بمبلغ: ${N(p.amount)} شيكل
-${p.note ? `ملاحظة الدفعة: ${p.note}\n` : ""}إجمالي المدفوع حتى الآن: ${d} من أصل ${N(s.price)} شيكل
+المبلغ: ${N(p.amount)} شيكل
+طريقة الدفع: ${p.method || "كاش"}
+${p.note ? `ملاحظة الدفعة: ${p.note}\n` : ""}إجمالي المدفوع: ${d} من أصل ${N(s.price)} شيكل
 المتبقي: ${rem} شيكل
-${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
+${s.note ? `ملاحظات الاتفاق: ${s.note}` : ""}`;
 
         md.style.display = "block";
-        md.innerHTML = `<div class=c style="max-width:340px;margin:60px auto;white-space:pre-line;text-align:right">
+        md.innerHTML = `<div class=c style="max-width:340px;margin:50px auto;white-space:pre-line;text-align:right">
           <div style="text-align:center;font-weight:bold;color:#003366;font-size:15px;margin-bottom:8px">🧾 إيصال قبض - مركز الياقوت</div>
           <b>${E(RT)}</b>
           <div style="margin-top:12px;display:flex;gap:6px;justify-content:center">
-            <button class="b s g" onclick="shr()">مشاركة / نسخ</button>
+            <button class="b s g" onclick="shr()">نسخ / مشاركة</button>
             <button class="b s r" onclick="md.style.display='none'">إغلاق</button>
           </div>
         </div>`;
@@ -413,7 +556,11 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
         const m = db.payments.filter((p) => String(p.date).startsWith(mo)),
           iS = sum(m.filter((p) => p.type == "student")),
           oT = sum(m.filter((p) => p.type == "teacher")),
-          td = (iS * pct()) / 100;
+          mExp = sum(db.expenses.filter((x) => String(x.date).startsWith(mo))),
+          td = (iS * pct()) / 100,
+          grossCenter = iS - td,
+          netCenter = grossCenter - mExp;
+
         const tr = db.teachers
           .map((t) => {
             const ids = db.students
@@ -426,6 +573,7 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
             return `<br>• ${E(t.name)}: مستحق ${((i * pct()) / 100).toFixed(0)} ₪ | مصروف ${o} ₪`;
           })
           .join("");
+
         const un = db.students
           .map((s) => ({ s, r: N(s.price) - paidS(s.id) }))
           .filter((x) => x.r > 0)
@@ -434,14 +582,17 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
               `<br>• ${E(x.s.name)} — متبقي: ${x.r} ₪ ${x.s.parent ? `<a href="tel:${E(x.s.parent)}">📞</a>` : ""}`,
           )
           .join("");
+
         return `<div class=c>
-          <b>📊 التقرير المالي الشهري</b>
-          <input class=i type=month value="${mo}" onchange="mo=this.value;rp.innerHTML=rep()">
-          إيراد المقبوضات: <b>${iS} ₪</b><br>
-          حصة المعلمين (${pct()}%): ${td.toFixed(0)} ₪ | حصة المركز (${100 - pct()}%): ${(iS - td).toFixed(0)} ₪<br>
-          المصروف فعلياً للمعلمين: ${oT} ₪ | صافي الشهر الحالي: <b>${iS - oT} ₪</b>
+          <b>📊 التقرير المالي الشامل والشريحة الشهرية</b>
+          <input class=i type=month value="${mo}" onchange="mo=this.value;render()">
+          إيراد المقبوضات من الطلاب: <b>${iS} ₪</b><br>
+          حصة المعلمين المستحقة (${pct()}%): ${td.toFixed(0)} ₪<br>
+          حصة المركز قبل المصاريف (${100 - pct()}%): ${grossCenter.toFixed(0)} ₪<br>
+          المصروفات التشغيلية للمركز: <b style="color:#dc2626">${mExp} ₪</b><br>
+          صافي أرباح المركز النهائي للشهر: <b style="color:${netCenter >= 0 ? "#059669" : "#dc2626"}">${netCenter.toFixed(0)} ₪</b>
           <br><br><b>المعلمون للشهر:</b>${tr || " —"}
-          <br><br><b>طلاب عليهم متبقي (الكل):</b>${un || " —"}
+          <br><br><b>طلاب عليهم متبقي:</b>${un || " —"}
         </div>`;
       };
 
@@ -472,25 +623,9 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
           name: f.n.value.trim(),
           phone: f.ph.value.trim(),
           subject: f.sb.value.trim(),
+          startDate: f.sd.value,
         });
         return false;
-      }
-
-      function pay(type, ref) {
-        const a = N(prompt("المبلغ (شيكل):"));
-        if (a > 0) {
-          const nt = prompt("ملاحظة على الدفعة (اختياري - مثل: قسط أول / كاش):") || "";
-          const id = uid();
-          op("payments", {
-            id,
-            date: today(),
-            type,
-            refId: ref,
-            amount: a,
-            note: nt.trim(),
-          });
-          if (type == "student") rc(id);
-        }
       }
 
       const V = {
@@ -516,8 +651,8 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
               <input class=i name=p type=number min=0 value="${defaultPrice}" placeholder="السعر المتفق عليه (شيكل)">
               <input class=i name=pp value="${E(e.parent)}" placeholder="رقم هاتف ولي الأمر">
             </div>
-            <input class=i name=nt value="${E(e.note)}" placeholder="📝 ملاحظات السعر والاتفاق (مثال: خصم إخوة / دفع قسطين)">
-            <button class=b>حفظ الطالب</button>[cite: 2]${e.id ? ER(0, "eS") : ""}
+            <input class=i name=nt value="${E(e.note)}" placeholder="📝 ملاحظات السعر والاتفاق (خصم إخوة / أقساط)">
+            <button class=b>حفظ الطالب</button>${e.id ? ER(0, "eS") : ""}
           </form>
           <input class=i placeholder="🔍 بحث عن طالب بالاسم أو الملاحظة..." oninput="qs=this.value;ls.innerHTML=SL()">
           <div id=ls>${SL()}</div>`;
@@ -526,31 +661,54 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
         te() {
           const e = db.teachers.find((t) => t.id == eT) || {};
           return `<form class=c onsubmit="return addT(this)">
-            <b>${e.id ? "تعديل معلم" : "إضافة معلم"}</b>
-            <input class=i name=n required placeholder="الاسم" value="${E(e.name)}">
+            <b>${e.id ? "✏️ تعديل بيانات معلم" : "➕ إضافة معلم جديد"}</b>
+            <input class=i name=n required placeholder="اسم المعلم" value="${E(e.name)}">
             <div class=row>
               <input class=i name=ph placeholder="الهاتف" value="${E(e.phone)}">
               <input class=i name=sb placeholder="المادة" value="${E(e.subject)}">
             </div>
-            <button class=b>حفظ</button>${e.id ? ER(0, "eT") : ""}
+            <label><small>تاريخ بدء عمل المعلم في المركز:</small><input class=i name=sd type=date value="${e.startDate || today()}"></label>
+            <button class=b>حفظ المعلم</button>${e.id ? ER(0, "eT") : ""}
           </form>
           <input class=i placeholder="🔍 بحث عن معلم..." oninput="qs=this.value;ls.innerHTML=TL()">
           <div id=ls>${TL()}</div>`;
         },
 
         sc() {
+          const dur = durationMins();
           return (
-            `<form class=c onsubmit="return addC(this)"><b>إضافة حصة للجدول</b><select class=i name=t required>${TO()}</select><div class=row><select class=i name=d>${D.map((d) => `<option>${d}</option>`).join("")}</select><input class=i name=tm type=time required></div><input class=i name=nt placeholder="ملاحظة (صف/مادة/قاعة)"><button class=b>حفظ الحصة</button></form>` +
+            `<form class=c onsubmit="return addC(this)">
+              <b>🗓 إضافة حصة لجدول المركز</b>
+              <select class=i name=t required>${TO()}</select>
+              <div class=row>
+                <select class=i name=g>${G.map((g, i) => `<option value=${i + 1}>${g}</option>`).join("")}</select>
+                <select class=i name=d>${D.map((d) => `<option>${d}</option>`).join("")}</select>
+              </div>
+              <div class=row>
+                <label><small>وقت البدء:</small><input class=i name=tm type=time required onchange="this.form.endTime.value=calcEndTime(this.value,${dur})"></label>
+                <label><small>وقت الانتهاء (تلقائي):</small><input class=i name=endTime type=time readonly style="background:#f8fafc"></label>
+              </div>
+              <input class=i name=nt placeholder="ملاحظة للحصة (مادة / تفاصيل)">
+              <button class=b>حفظ الحصة بالجدول</button>
+            </form>
+            <div class=c style="background:#e0f2fe;color:#0369a1">⏱ مدة الحصة المعتمدة بالنظام: <b>${dur} دقيقة</b> (يمكن تغييرها من الإعدادات)</div>` +
             D.map((d) => {
               const l = db.schedule
                 .filter((x) => x.day == d)
-                .sort((a, b) => String(a.time).localeCompare(b.time));
+                .sort((a, b) => String(a.startTime).localeCompare(b.startTime));
               return l.length
                 ? `<div class=c><b class=k>📍 ${d}</b>` +
                     l
                       .map(
                         (x) =>
-                          `<br>🕒 ${E(x.time)} — <b>${E(tn(x.teacherId))}</b> <small>(${E(x.note)})</small> <button class="b s r" onclick="del('schedule','${x.id}')">✕</button>`,
+                          `<div style="border-bottom:1px solid #f1f5f9;padding:6px 0">
+                            🕒 <b>${E(x.startTime)} - ${calcEndTime(x.startTime, dur)}</b> — <b>${E(tn(x.teacherId))}</b> (${G[(x.grade || 1) - 1]})
+                            ${x.note ? `<br><small>📝 ${E(x.note)}</small>` : ""}
+                            <div style="margin-top:4px">
+                              <button class="b s g" onclick="openAttendance('${x.id}')">📋 كشف الحضور</button>
+                              <button class="b s r" onclick="del('schedule','${x.id}')">✕</button>
+                            </div>
+                          </div>`,
                       )
                       .join("") +
                     "</div>"
@@ -562,9 +720,11 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
         pa() {
           const iS = sum(db.payments.filter((p) => p.type == "student")),
             oT = sum(db.payments.filter((p) => p.type == "teacher")),
-            td = (iS * pct()) / 100;
+            mExp = sum(db.expenses.filter((x) => String(x.date).startsWith(mo))),
+            td = (iS * pct()) / 100,
+            grossCenter = iS - td,
+            netCenter = grossCenter - mExp;
 
-          // فلترة قائمة طلاب المدفوعات
           const studentLedger = db.students
             .filter((s) => {
               const matchesSearch = (s.name + (s.parent || "") + (s.note || "")).includes(pq);
@@ -583,7 +743,7 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
                 ? pList
                     .map(
                       (p) => `<div class="pay-item">
-                        <span>📅 <b>${E(p.date)}</b> — <b style="color:#059669">${N(p.amount)} ₪</b> ${p.note ? `<small>(${E(p.note)})</small>` : ""}</span>
+                        <span>📅 <b>${E(p.date)}</b> — <b style="color:#059669">${N(p.amount)} ₪</b> <span class="method-tag">${E(p.method || "كاش")}</span> ${p.note ? `<small>(${E(p.note)})</small>` : ""}</span>
                         <div>
                           <button class="b s g" onclick="rc('${p.id}')">🧾 إيصال</button>
                           <button class="b s r" onclick="del('payments','${p.id}')">✕</button>
@@ -599,7 +759,7 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
                     <span class=k style="font-size:15px">${E(s.name)}</span> 
                     <small>(${G[(s.grade || 1) - 1] || ""})</small>
                   </div>
-                  <button class="b s g" onclick="pay('student','${s.id}')">+ إضافة دفعة</button>
+                  <button class="b s g" onclick="payModal('student','${s.id}')">+ تسجيل دفعة</button>
                 </div>
                 <div>الاتفاق: <b>${N(s.price)} ₪</b> | المدفوع: <b style="color:#059669">${totalPaid} ₪</b> | المتبقي: <b style="color:${rem > 0 ? "#dc2626" : "#059669"}">${rem} ₪</b></div>
                 ${s.note ? `<div class="badge-note">📝 ملاحظات الاتفاق: ${E(s.note)}</div>` : ""}
@@ -612,17 +772,48 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
             })
             .join("");
 
+          const expensesList = db.expenses
+            .filter((x) => String(x.date).startsWith(mo))
+            .map(
+              (x) =>
+                `<div class="pay-item">
+                  <span>📅 <b>${E(x.date)}</b> — ${E(x.title)} (${E(x.category)}): <b style="color:#dc2626">${N(x.amount)} ₪</b> ${x.note ? `<small>(${E(x.note)})</small>` : ""}</span>
+                  <button class="b s r" onclick="del('expenses','${x.id}')">✕</button>
+                </div>`,
+            )
+            .join("");
+
           return (
             `<div id=rp>${rep()}</div>
-            <div class=c>
-              <b>💰 إجمالي صندوق المركز</b><br>
-              المقبوض من الطلاب: <b>${iS} ₪</b><br>
-              حصة المعلمين (${pct()}%): <b>${td.toFixed(0)} ₪</b> | حصة الإدارة (${100 - pct()}%): <b>${(iS - td).toFixed(0)} ₪</b><br>
-              المصروف للمعلمين: <b>${oT} ₪</b> | صافي الرصيد الحالي: <b style="color:#059669">${iS - oT} ₪</b>
-            </div>
             
+            <form class=c onsubmit="return addExpense(this)">
+              <b>💸 إضافة مصروف تشغيلي للمركز</b>
+              <div class=row>
+                <input class=i name=tl required placeholder="بيان المصروف (مثال: إيجار / كهرباء)">
+                <input class=i name=am type=number min=1 required placeholder="المبلغ (شيكل)">
+              </div>
+              <div class=row>
+                <select class=i name=cat required>
+                  <option>إيجار المقر</option>
+                  <option>كهرباء وماء</option>
+                  <option>قرطاسية وطباعة</option>
+                  <option>ضيافة ونظافة</option>
+                  <option>صيانة وتسويق</option>
+                  <option>أخرى</option>
+                </select>
+                <input class=i name=dt type=date value="${today()}">
+              </div>
+              <input class=i name=nt placeholder="ملاحظة إضافية">
+              <button class=b>تسجيل المصروف</button>
+            </form>
+
             <div class=c>
-              <b>🔎 كشف حساب ومدفوعات الطلاب</b>
+              <b>📋 سجل المصروفات التشغيلية للشهر الحالي (${mo})</b>
+              ${expensesList || '<div style="color:#94a3b8;font-size:12px">لا توجد مصروفات مسجلة لهذا الشهر</div>'}
+            </div>
+
+            <div class=c>
+              <b>🔎 كشف حساب ومقبوضات الطلاب</b>
               <input class=i placeholder="🔍 بحث باسم الطالب أو الملاحظة..." value="${E(pq)}" oninput="pq=this.value;render()">
               <div class=row style="margin-bottom:8px">
                 <button class="b s ${pFilter == "all" ? "g" : ""}" onclick="pFilter='all';render()">الكل</button>
@@ -637,9 +828,15 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
         se() {
           return (
             `<form class=c onsubmit="return saveSet(this)">
-              <b>نسبة المعلم من الدخل %</b>
-              <input class=i name=pct type=number min=0 max=100 value="${pct()}" oninput="ap.textContent=100-this.value">
-              <small>حصة إدارة المركز: <span id=ap>${100 - pct()}</span>%</small>
+              <b>⚙️ إعدادات النظام وتوزيع النسب</b>
+              <label><small>نسبة المعلم من الإيراد %:</small>
+                <input class=i name=pct type=number min=0 max=100 value="${pct()}" oninput="ap.textContent=100-this.value">
+              </label>
+              <small>حصة إدارة المركز تلقائياً: <span id=ap>${100 - pct()}</span>%</small>
+              <br><br>
+              <label><small>⏱ مدة الحصة الافتراضية لكل النظام (بالدقائق):</small>
+                <input class=i name=duration type=number min=15 max=240 value="${durationMins()}">
+              </label>
               <br><br>
               <b>📌 التسعيرة الافتراضية لكل صف (شيكل)</b>
               <small style="display:block;margin-bottom:6px">تظهر هذه التسعيرة تلقائياً عند اختيار الصف أثناء تسجيل طالب جديد.</small>` +
@@ -647,7 +844,7 @@ ${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
               (g, i) =>
                 `<label style="display:block;margin-bottom:4px"><small><b>${g}:</b></small><input class=i name=p${i + 1} type=number min=0 value="${P(i + 1)}"></label>`,
             ).join("") +
-            `<br><button class=b>حفظ الإعدادات والتسعير</button></form>`
+            `<br><button class=b>حفظ إعدادات النظام</button></form>`
           );
         },
       };
