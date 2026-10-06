@@ -1,74 +1,686 @@
-<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مركز الياقوت</title>
-<style> 
-body{margin:0;font-family:sans-serif;background:#f1f5f9;color:#1e293b}
-header{background:#003366;color:#fff;text-align:center;padding:8px;border-bottom:4px solid #D4AF37;position:sticky;top:0;z-index:9}
-header img{width:52px;height:52px;border-radius:50%;background:#fff;padding:3px;object-fit:contain}
-h1{font-size:17px;margin:3px 0}
-nav{display:flex;gap:4px;margin-top:6px}
-nav button{flex:1;padding:8px 2px;border:0;border-radius:8px;font-size:11px;font-weight:bold;background:#0b2a4f;color:#fff}
-nav button.on{background:#D4AF37;color:#003366}
-main{padding:12px;max-width:560px;margin:auto}
-.c{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 3px #0002;font-size:13px;line-height:1.9}
-.i{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:9px;margin:3px 0 8px;font-size:14px}
-.b{background:#003366;color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:bold}
-.s{padding:5px 9px;font-size:12px;margin-inline-end:4px}.g{background:#059669}.r{background:#dc2626}
-.row{display:flex;gap:8px}.row>*{flex:1}
-small{color:#64748b}.k{font-weight:bold;color:#003366}
-</style></head><body>
-<header><img src="image_6633be.png" onerror="this.style.display='none'"><h1>مركز الياقوت التعليمي</h1><div id="st" style="font-size:11px"></div><nav id="nv"></nav></header>
-<main id="v"></main><div id="md" style="display:none;position:fixed;inset:0;background:#000a;z-index:99"></div>
-<script>
-const API="https://script.google.com/macros/s/AKfycbyVDm4Ysda7wkCZqmdr433boSg4sFh0HIJBrtaK0p_LNLwBpUyvsvOL6128adr4fTs9Rg/exec",TK="Yaqout-1234";
-const G=[...Array(12)].map((_,i)=>"الصف "+(i+1)),D=["السبت","الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
-const TABS=[["st","👨‍🎓 الطلاب"],["te","👩‍🏫 المعلمون"],["sc","🗓 الجدول"],["pa","💰 المالية"],["se","⚙️ إعدادات"]];
-let tab="st",busy=0,db=JSON.parse(localStorage.yq_db||'{"teachers":[],"students":[],"payments":[],"schedule":[],"settings":[]}'),q=JSON.parse(localStorage.yq_q||'[]');
-const N=v=>Number(v)||0,E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5),today=()=>new Date().toISOString().slice(0,10);
-const sum=a=>a.reduce((x,p)=>x+N(p.amount),0),save=()=>{localStorage.yq_db=JSON.stringify(db);localStorage.yq_q=JSON.stringify(q)};
-const S=k=>{const r=db.settings.find(x=>x.id==k);return r?N(r.value):0},P=g=>S("p"+g),pct=()=>db.settings.some(x=>x.id=="pct")?S("pct"):60;
-const tn=id=>(db.teachers.find(t=>t.id==id)||{}).name||"—",TO=s=>db.teachers.map(t=>`<option value="${t.id}"${t.id==s?" selected":""}>${E(t.name)}</option>`).join("");
-const paidS=id=>sum(db.payments.filter(p=>p.type=="student"&&p.refId==id));
-function tStat(t){const ids=db.students.filter(s=>s.teacherId==t.id).map(s=>s.id);const inc=sum(db.payments.filter(p=>p.type=="student"&&ids.includes(p.refId)));return{ids,due:inc*pct()/100,paid:sum(db.payments.filter(p=>p.type=="teacher"&&p.refId==t.id))}}
-function op(t,r,del){const o=del?{t,id:r,del:1}:{t,id:r.id,r},a=db[t],i=a.findIndex(x=>x.id==o.id);
- if(del){if(i>-1)a.splice(i,1)}else if(i>-1)a[i]=r;else a.push(r);q.push(o);save();render();flush()}
-async function flush(){if(busy||!q.length||!navigator.onLine)return;busy=1;const ops=[...q];
- try{const j=await(await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({token:TK,ops})})).json();if(j.status!="success")throw 0;q=q.slice(ops.length);save();busy=0;if(q.length)return flush();await load()}catch(e){busy=0;render()}}
-async function load(){if(!navigator.onLine||q.length)return;try{const j=await(await fetch(API+"?token="+encodeURIComponent(TK))).json();if(j.status=="success"){db=j.data;save();render()}}catch(e){}}
-const del=(t,id)=>confirm("تأكيد الحذف؟")&&op(t,id,1);
-function addC(f){if(db.schedule.some(x=>x.teacherId==f.t.value&&x.day==f.d.value&&x.time==f.tm.value))return alert("تعارض: للمعلم حصة بنفس اليوم والوقت"),false;
- op("schedule",{id:uid(),teacherId:f.t.value,day:f.d.value,time:f.tm.value,note:f.nt.value});return false}
-function saveSet(f){const p=Math.min(100,Math.max(0,N(f.pct.value))),v=[["pct",p]];for(let i=1;i<=12;i++)v.push(["p"+i,N(f["p"+i].value)]);v.forEach(x=>op("settings",{id:x[0],value:x[1]}));alert("تم الحفظ");return false}
-let qs="",eS="",eT="",mo=today().slice(0,7),RT="";
-const ER=(v,k)=>`<button type=button class="b s r" onclick="${k}='';render()">إلغاء</button>`;
-const SL=()=>db.students.filter(s=>(s.name+(s.parent||"")).includes(qs)).reverse().map(s=>{const p=paidS(s.id),r=N(s.price)-p;return `<div class=c><span class=k>${E(s.name)}</span> <small>${G[s.grade-1]||""} · ${E(s.track)} · ${E(tn(s.teacherId))}</small> ${s.parent?`<a href="tel:${E(s.parent)}">📞</a>`:""}<br>السعر ${N(s.price)} | مدفوع ${p} | <b style="color:${r>0?"#dc2626":"#059669"}">متبقي ${r}</b><br><button class="b s g" onclick="pay('student','${s.id}')">+ دفعة</button><button class="b s" onclick="eS='${s.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('students','${s.id}')">حذف</button></div>`}).join("");
-const TL=()=>db.teachers.filter(t=>(t.name+(t.subject||"")).includes(qs)).map(t=>{const x=tStat(t);return `<div class=c><span class=k>${E(t.name)}</span> <small>${E(t.subject)} ${E(t.phone)}</small><br>الطلاب (${x.ids.length}): <small>${x.ids.map(i=>E((db.students.find(s=>s.id==i)||{}).name)).join("، ")||"—"}</small><br>المستحق ${x.due.toFixed(0)} | المصروف ${x.paid} | <b>الرصيد ${(x.due-x.paid).toFixed(0)}</b><br><button class="b s g" onclick="pay('teacher','${t.id}')">+ صرف</button><button class="b s" onclick="eT='${t.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('teachers','${t.id}')">حذف</button></div>`}).join("");
-function rc(id){const p=db.payments.find(x=>x.id==id),s=db.students.find(x=>x.id==p.refId)||{},d=paidS(s.id);
- RT=`مركز الياقوت التعليمي\nإيصال قبض رقم ${p.id}\nالتاريخ: ${p.date}\nالطالب: ${s.name}\n${G[s.grade-1]||""}\nالمبلغ: ${N(p.amount)} شيكل\nإجمالي المدفوع: ${d} من ${N(s.price)}\nالمتبقي: ${N(s.price)-d}`;
- md.style.display="block";md.innerHTML=`<div class=c style="max-width:340px;margin:70px auto;white-space:pre-line;text-align:center"><b>${E(RT)}</b>\n<button class="b s g" onclick="shr()">مشاركة / نسخ</button><button class="b s r" onclick="md.style.display='none'">إغلاق</button></div>`}
-async function shr(){try{if(navigator.share)await navigator.share({text:RT});else{await navigator.clipboard.writeText(RT);alert("تم النسخ")}}catch(e){}}
-const rep=()=>{const m=db.payments.filter(p=>String(p.date).startsWith(mo)),iS=sum(m.filter(p=>p.type=="student")),oT=sum(m.filter(p=>p.type=="teacher")),td=iS*pct()/100;
- const tr=db.teachers.map(t=>{const ids=db.students.filter(s=>s.teacherId==t.id).map(s=>s.id),i=sum(m.filter(p=>p.type=="student"&&ids.includes(p.refId))),o=sum(m.filter(p=>p.type=="teacher"&&p.refId==t.id));return `<br>${E(t.name)}: مستحق ${(i*pct()/100).toFixed(0)} | مصروف ${o}`}).join("");
- const un=db.students.map(s=>({s,r:N(s.price)-paidS(s.id)})).filter(x=>x.r>0).map(x=>`<br>${E(x.s.name)} — ${x.r} ₪ ${x.s.parent?`<a href="tel:${E(x.s.parent)}">📞</a>`:""}`).join("");
- return `<div class=c><b>تقرير شهري</b><input class=i type=month value="${mo}" onchange="mo=this.value;rp.innerHTML=rep()">إيراد: ${iS} | حصة المعلمين: ${td.toFixed(0)} | حصة الإدارة: ${(iS-td).toFixed(0)}<br>مصروف للمعلمين: ${oT} | صافي الشهر: <b>${iS-oT}</b><br><b>المعلمون:</b>${tr||" —"}<br><b>طلاب عليهم متبقي:</b>${un||" —"}</div>`};
-function addS(f){const o=db.students.find(s=>s.id==eS)||{},id=o.id||uid();eS="";op("students",{id,date:o.date||today(),name:f.n.value.trim(),grade:f.g.value,track:f.k.value,teacherId:f.t.value,price:N(f.p.value),parent:f.pp.value});return false}
-function addT(f){const o=db.teachers.find(t=>t.id==eT)||{},id=o.id||uid();eT="";op("teachers",{id,name:f.n.value.trim(),phone:f.ph.value,subject:f.sb.value});return false}
-function pay(type,ref){const a=N(prompt("المبلغ (شيكل):"));if(a>0){const id=uid();op("payments",{id,date:today(),type,refId:ref,amount:a,note:""});if(type=="student")rc(id)}}
-const V={
-st(){const e=db.students.find(s=>s.id==eS)||{};return `<form class=c onsubmit="return addS(this)"><b>${e.id?"تعديل طالب":"تسجيل طالب"}</b><input class=i name=n required placeholder="اسم الطالب" value="${E(e.name)}">
-<div class=row><select class=i name=g onchange="this.form.p.value=P(this.value)">${G.map((g,i)=>`<option value=${i+1}${e.grade==i+1?" selected":""}>${g}</option>`).join("")}</select><select class=i name=k><option>تأسيس</option><option${e.track=="منهج عادي"?" selected":""}>منهج عادي</option></select></div>
-<select class=i name=t required>${TO(e.teacherId)||'<option value="">أضف معلماً أولاً</option>'}</select><div class=row><input class=i name=p type=number min=0 value="${e.id?N(e.price):P(1)}" placeholder="السعر"><input class=i name=pp value="${E(e.parent)}" placeholder="هاتف ولي الأمر"></div><button class=b>حفظ</button>${e.id?ER(0,"eS"):""}</form>
-<input class=i placeholder="🔍 بحث..." oninput="qs=this.value;ls.innerHTML=SL()"><div id=ls>${SL()}</div>`},
-te(){const e=db.teachers.find(t=>t.id==eT)||{};return `<form class=c onsubmit="return addT(this)"><b>${e.id?"تعديل معلم":"إضافة معلم"}</b><input class=i name=n required placeholder="الاسم" value="${E(e.name)}"><div class=row><input class=i name=ph placeholder="الهاتف" value="${E(e.phone)}"><input class=i name=sb placeholder="المادة" value="${E(e.subject)}"></div><button class=b>حفظ</button>${e.id?ER(0,"eT"):""}</form>
-<input class=i placeholder="🔍 بحث..." oninput="qs=this.value;ls.innerHTML=TL()"><div id=ls>${TL()}</div>`},
-sc(){return `<form class=c onsubmit="return addC(this)"><b>إضافة حصة</b><select class=i name=t required>${TO()}</select><div class=row><select class=i name=d>${D.map(d=>`<option>${d}</option>`).join("")}</select><input class=i name=tm type=time required></div><input class=i name=nt placeholder="ملاحظة (صف/مادة/قاعة)"><button class=b>حفظ</button></form>`+
- D.map(d=>{const l=db.schedule.filter(x=>x.day==d).sort((a,b)=>String(a.time).localeCompare(b.time));return l.length?`<div class=c><b class=k>${d}</b>`+l.map(x=>`<br>${E(x.time)} — ${E(tn(x.teacherId))} <small>${E(x.note)}</small> <button class="b s r" onclick="del('schedule','${x.id}')">✕</button>`).join("")+"</div>":""}).join("")},
-pa(){const iS=sum(db.payments.filter(p=>p.type=="student")),oT=sum(db.payments.filter(p=>p.type=="teacher")),td=iS*pct()/100;
- return `<div id=rp>${rep()}</div><div class=c>إيراد الطلاب (الكل): <b>${iS}</b><br>حصة المعلمين (${pct()}%): <b>${td.toFixed(0)}</b><br>حصة الإدارة (${100-pct()}%): <b>${(iS-td).toFixed(0)}</b><br>المصروف للمعلمين: <b>${oT}</b><br>صافي الصندوق: <b>${iS-oT}</b></div>`+
- db.payments.slice().reverse().map(p=>{const s=p.type=="student";return `<div class=c>${s?"🟢 من طالب":"🔴 لمعلم"}: <span class=k>${E(s?(db.students.find(x=>x.id==p.refId)||{}).name:tn(p.refId))}</span> — ${N(p.amount)} ₪ <small>${E(p.date)}</small> ${s?`<button class="b s g" onclick="rc('${p.id}')">🧾</button>`:""}<button class="b s r" onclick="del('payments','${p.id}')">✕</button></div>`}).join("")},
-se(){return `<form class=c onsubmit="return saveSet(this)"><b>نسبة المعلم %</b><input class=i name=pct type=number min=0 max=100 value="${pct()}" oninput="ap.textContent=100-this.value"><small>نسبة الإدارة: <span id=ap>${100-pct()}</span>%</small><br><br><b>سعر كل صف (شيكل)</b>`+
- G.map((g,i)=>`<label><small>${g}</small><input class=i name=p${i+1} type=number min=0 value="${P(i+1)}"></label>`).join("")+`<button class=b>حفظ الإعدادات</button></form>`}};
-function render(){nv.innerHTML=TABS.map(t=>`<button class="${t[0]==tab?"on":""}" onclick="tab='${t[0]}';qs='';eS='';eT='';render()">${t[1]}</button>`).join("");
- st.textContent=!navigator.onLine?"🔴 أوفلاين":q.length?"⏳ بانتظار المزامنة: "+q.length:"🟢 متزامن";
- if(!document.activeElement||!/INPUT|SELECT/.test(document.activeElement.tagName)||document.activeElement.form==null)v.innerHTML=V[tab]()}
-addEventListener("online",()=>{flush();load()});addEventListener("offline",render);
-render();flush();load();
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>مركز الياقوت</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+      }
+      header {
+        background: #003366;
+        color: #fff;
+        text-align: center;
+        padding: 8px;
+        border-bottom: 4px solid #d4af37;
+        position: sticky;
+        top: 0;
+        z-index: 9;
+      }
+      header img {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #fff;
+        padding: 3px;
+        object-fit: contain;
+      }
+      h1 {
+        font-size: 17px;
+        margin: 3px 0;
+      }
+      nav {
+        display: flex;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      nav button {
+        flex: 1;
+        padding: 8px 2px;
+        border: 0;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: bold;
+        background: #0b2a4f;
+        color: #fff;
+        cursor: pointer;
+      }
+      nav button.on {
+        background: #d4af37;
+        color: #003366;
+      }
+      main {
+        padding: 12px;
+        max-width: 560px;
+        margin: auto;
+      }
+      .c {
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 3px #0002;
+        font-size: 13px;
+        line-height: 1.8;
+      }
+      .i {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 9px;
+        margin: 3px 0 8px;
+        font-size: 14px;
+      }
+      .b {
+        background: #003366;
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .s {
+        padding: 5px 9px;
+        font-size: 12px;
+        margin-inline-end: 4px;
+      }
+      .g {
+        background: #059669;
+      }
+      .r {
+        background: #dc2626;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      .row > * {
+        flex: 1;
+      }
+      small {
+        color: #64748b;
+      }
+      .k {
+        font-weight: bold;
+        color: #003366;
+      }
+      .badge-note {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        margin: 4px 0;
+        display: block;
+      }
+      .pay-history {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 8px;
+        margin-top: 6px;
+      }
+      .pay-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 4px 0;
+      }
+      .pay-item:last-child {
+        border-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="image_6633be.png" onerror="this.style.display = 'none'" />
+      <h1>مركز الياقوت التعليمي</h1>
+      <div id="st" style="font-size: 11px"></div>
+      <nav id="nv"></nav>
+    </header>
+
+    <main id="v"></main>
+
+    <div
+      id="md"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #000a;
+        z-index: 99;
+      "
+    ></div>
+
+    <script>
+      const API =
+          "https://script.google.com/macros/s/AKfycbyVDm4Ysda7wkCZqmdr433boSg4sFh0HIJBrtaK0p_LNLwBpUyvsvOL6128adr4fTs9Rg/exec",
+        TK = "Yaqout-1234";
+
+      const G = [...Array(12)].map((_, i) => "الصف " + (i + 1)),
+        D = [
+          "السبت",
+          "الأحد",
+          "الاثنين",
+          "الثلاثاء",
+          "الأربعاء",
+          "الخميس",
+          "الجمعة",
+        ];
+
+      const TABS = [
+        ["st", "👨‍🎓 الطلاب"],
+        ["te", "👩‍🏫 المعلمون"],
+        ["sc", "🗓 الجدول"],
+        ["pa", "💰 المالية"],
+        ["se", "⚙️ إعدادات"],
+      ];
+
+      let tab = "st",
+        busy = 0,
+        db = JSON.parse(
+          localStorage.yq_db ||
+            '{"teachers":[],"students":[],"payments":[],"schedule":[],"settings":[]}',
+        ),
+        q = JSON.parse(localStorage.yq_q || "[]");
+
+      const N = (v) => Number(v) || 0,
+        E = (s) =>
+          String(s ?? "").replace(
+            /[&<>"']/g,
+            (c) => "&#" + c.charCodeAt(0) + ";",
+          ),
+        uid = () =>
+          Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        today = () => new Date().toISOString().slice(0, 10);
+
+      const sum = (a) => a.reduce((x, p) => x + N(p.amount), 0),
+        save = () => {
+          localStorage.yq_db = JSON.stringify(db);
+          localStorage.yq_q = JSON.stringify(q);
+        };
+
+      const S = (k) => {
+          const r = db.settings.find((x) => x.id == k);
+          return r ? N(r.value) : 0;
+        },
+        P = (g) => S("p" + g),
+        pct = () => (db.settings.some((x) => x.id == "pct") ? S("pct") : 60);
+
+      const tn = (id) =>
+          (db.teachers.find((t) => t.id == id) || {}).name || "—",
+        TO = (s) =>
+          db.teachers
+            .map(
+              (t) =>
+                `<option value="${t.id}"${t.id == s ? " selected" : ""}>${E(t.name)}</option>`,
+            )
+            .join("");
+
+      const paidS = (id) =>
+        sum(db.payments.filter((p) => p.type == "student" && p.refId == id));
+
+      const studentPayments = (id) =>
+        db.payments.filter((p) => p.type == "student" && p.refId == id);
+
+      function tStat(t) {
+        const ids = db.students
+          .filter((s) => s.teacherId == t.id)
+          .map((s) => s.id);
+        const inc = sum(
+          db.payments.filter(
+            (p) => p.type == "student" && ids.includes(p.refId),
+          ),
+        );
+        return {
+          ids,
+          due: (inc * pct()) / 100,
+          paid: sum(
+            db.payments.filter((p) => p.type == "teacher" && p.refId == t.id),
+          ),
+        };
+      }
+
+      function op(t, r, del) {
+        const o = del ? { t, id: r, del: 1 } : { t, id: r.id, r },
+          a = db[t],
+          i = a.findIndex((x) => x.id == o.id);
+        if (del) {
+          if (i > -1) a.splice(i, 1);
+        } else if (i > -1) a[i] = r;
+        else a.push(r);
+        q.push(o);
+        save();
+        render();
+        flush();
+      }
+
+      async function flush() {
+        if (busy || !q.length || !navigator.onLine) return;
+        busy = 1;
+        const ops = [...q];
+        try {
+          const j = await (
+            await fetch(API, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({ token: TK, ops }),
+            })
+          ).json();
+          if (j.status != "success") throw 0;
+          q = q.slice(ops.length);
+          save();
+          busy = 0;
+          if (q.length) return flush();
+          await load();
+        } catch (e) {
+          busy = 0;
+          render();
+        }
+      }
+
+      async function load() {
+        if (!navigator.onLine || q.length) return;
+        try {
+          const j = await (
+            await fetch(API + "?token=" + encodeURIComponent(TK))
+          ).json();
+          if (j.status == "success") {
+            db = j.data;
+            save();
+            render();
+          }
+        } catch (e) {}
+      }
+
+      const del = (t, id) => confirm("تأكيد الحذف؟") && op(t, id, 1);
+
+      function addC(f) {
+        if (
+          db.schedule.some(
+            (x) =>
+              x.teacherId == f.t.value &&
+              x.day == f.d.value &&
+              x.time == f.tm.value,
+          )
+        )
+          return alert("تعارض: للمعلم حصة بنفس اليوم والوقت"), false;
+        op("schedule", {
+          id: uid(),
+          teacherId: f.t.value,
+          day: f.d.value,
+          time: f.tm.value,
+          note: f.nt.value,
+        });
+        return false;
+      }
+
+      function saveSet(f) {
+        const p = Math.min(100, Math.max(0, N(f.pct.value))),
+          v = [["pct", p]];
+        for (let i = 1; i <= 12; i++) v.push(["p" + i, N(f["p" + i].value)]);
+        v.forEach((x) => op("settings", { id: x[0], value: x[1] }));
+        alert("تم حفظ الإعدادات بنجاح");
+        return false;
+      }
+
+      let qs = "",
+        pq = "",
+        pFilter = "all",
+        eS = "",
+        eT = "",
+        mo = today().slice(0, 7),
+        RT = "";
+
+      const ER = (v, k) =>
+        `<button type=button class="b s r" onclick="${k}='';render()">إلغاء</button>`;
+
+      const SL = () =>
+        db.students
+          .filter((s) => (s.name + (s.parent || "") + (s.note || "")).includes(qs))
+          .reverse()
+          .map((s) => {
+            const p = paidS(s.id),
+              r = N(s.price) - p;
+            return `<div class=c>
+              <span class=k>${E(s.name)}</span> <small>${G[(s.grade || 1) - 1] || ""} · ${E(s.track)} · المعلم: ${E(tn(s.teacherId))}</small> ${s.parent ? `<a href="tel:${E(s.parent)}">📞</a>` : ""}
+              <br>السعر: <b>${N(s.price)} ₪</b> | مدفوع: ${p} ₪ | <b style="color:${r > 0 ? "#dc2626" : "#059669"}">متبقي: ${r} ₪</b>
+              ${s.note ? `<div class="badge-note">📝 ملاحظة: ${E(s.note)}</div>` : ""}
+              <div style="margin-top:6px">
+                <button class="b s g" onclick="pay('student','${s.id}')">+ دفعة</button>
+                <button class="b s" onclick="eS='${s.id}';scrollTo(0,0);render()">تعديل</button>
+                <button class="b s r" onclick="del('students','${s.id}')">حذف</button>
+              </div>
+            </div>`;
+          })
+          .join("");
+
+      const TL = () =>
+        db.teachers
+          .filter((t) => (t.name + (t.subject || "")).includes(qs))
+          .map((t) => {
+            const x = tStat(t);
+            return `<div class=c><span class=k>${E(t.name)}</span> <small>${E(t.subject)} ${E(t.phone)}</small><br>الطلاب (${x.ids.length}): <small>${x.ids.map((i) => E((db.students.find((s) => s.id == i) || {}).name)).join("، ") || "—"}</small><br>المستحق ${x.due.toFixed(0)} | المصروف ${x.paid} | <b>الرصيد ${(x.due - x.paid).toFixed(0)}</b><br><button class="b s g" onclick="pay('teacher','${t.id}')">+ صرف</button><button class="b s" onclick="eT='${t.id}';scrollTo(0,0);render()">تعديل</button><button class="b s r" onclick="del('teachers','${t.id}')">حذف</button></div>`;
+          })
+          .join("");
+
+      function rc(id) {
+        const p = db.payments.find((x) => x.id == id);
+        if (!p) return;
+        const s = db.students.find((x) => x.id == p.refId) || {};
+        const d = paidS(s.id);
+        const rem = N(s.price) - d;
+
+        RT = `مركز الياقوت التعليمي
+إيصال قبض رقم: ${p.id}
+التاريخ: ${p.date}
+الطالب: ${s.name || "—"}
+الصف: ${G[(s.grade || 1) - 1] || "—"}
+دفعة بمبلغ: ${N(p.amount)} شيكل
+${p.note ? `ملاحظة الدفعة: ${p.note}\n` : ""}إجمالي المدفوع حتى الآن: ${d} من أصل ${N(s.price)} شيكل
+المتبقي: ${rem} شيكل
+${s.note ? `ملاحظات الطالب: ${s.note}` : ""}`;
+
+        md.style.display = "block";
+        md.innerHTML = `<div class=c style="max-width:340px;margin:60px auto;white-space:pre-line;text-align:right">
+          <div style="text-align:center;font-weight:bold;color:#003366;font-size:15px;margin-bottom:8px">🧾 إيصال قبض - مركز الياقوت</div>
+          <b>${E(RT)}</b>
+          <div style="margin-top:12px;display:flex;gap:6px;justify-content:center">
+            <button class="b s g" onclick="shr()">مشاركة / نسخ</button>
+            <button class="b s r" onclick="md.style.display='none'">إغلاق</button>
+          </div>
+        </div>`;
+      }
+
+      async function shr() {
+        try {
+          if (navigator.share) await navigator.share({ text: RT });
+          else {
+            await navigator.clipboard.writeText(RT);
+            alert("تم نسخ النص للإيصال");
+          }
+        } catch (e) {}
+      }
+
+      const rep = () => {
+        const m = db.payments.filter((p) => String(p.date).startsWith(mo)),
+          iS = sum(m.filter((p) => p.type == "student")),
+          oT = sum(m.filter((p) => p.type == "teacher")),
+          td = (iS * pct()) / 100;
+        const tr = db.teachers
+          .map((t) => {
+            const ids = db.students
+                .filter((s) => s.teacherId == t.id)
+                .map((s) => s.id),
+              i = sum(
+                m.filter((p) => p.type == "student" && ids.includes(p.refId)),
+              ),
+              o = sum(m.filter((p) => p.type == "teacher" && p.refId == t.id));
+            return `<br>• ${E(t.name)}: مستحق ${((i * pct()) / 100).toFixed(0)} ₪ | مصروف ${o} ₪`;
+          })
+          .join("");
+        const un = db.students
+          .map((s) => ({ s, r: N(s.price) - paidS(s.id) }))
+          .filter((x) => x.r > 0)
+          .map(
+            (x) =>
+              `<br>• ${E(x.s.name)} — متبقي: ${x.r} ₪ ${x.s.parent ? `<a href="tel:${E(x.s.parent)}">📞</a>` : ""}`,
+          )
+          .join("");
+        return `<div class=c>
+          <b>📊 التقرير المالي الشهري</b>
+          <input class=i type=month value="${mo}" onchange="mo=this.value;rp.innerHTML=rep()">
+          إيراد المقبوضات: <b>${iS} ₪</b><br>
+          حصة المعلمين (${pct()}%): ${td.toFixed(0)} ₪ | حصة المركز (${100 - pct()}%): ${(iS - td).toFixed(0)} ₪<br>
+          المصروف فعلياً للمعلمين: ${oT} ₪ | صافي الشهر الحالي: <b>${iS - oT} ₪</b>
+          <br><br><b>المعلمون للشهر:</b>${tr || " —"}
+          <br><br><b>طلاب عليهم متبقي (الكل):</b>${un || " —"}
+        </div>`;
+      };
+
+      function addS(f) {
+        const o = db.students.find((s) => s.id == eS) || {},
+          id = o.id || uid();
+        eS = "";
+        op("students", {
+          id,
+          date: o.date || today(),
+          name: f.n.value.trim(),
+          grade: f.g.value,
+          track: f.k.value,
+          teacherId: f.t.value,
+          price: N(f.p.value),
+          parent: f.pp.value.trim(),
+          note: f.nt.value.trim(),
+        });
+        return false;
+      }
+
+      function addT(f) {
+        const o = db.teachers.find((t) => t.id == eT) || {},
+          id = o.id || uid();
+        eT = "";
+        op("teachers", {
+          id,
+          name: f.n.value.trim(),
+          phone: f.ph.value.trim(),
+          subject: f.sb.value.trim(),
+        });
+        return false;
+      }
+
+      function pay(type, ref) {
+        const a = N(prompt("المبلغ (شيكل):"));
+        if (a > 0) {
+          const nt = prompt("ملاحظة على الدفعة (اختياري - مثل: قسط أول / كاش):") || "";
+          const id = uid();
+          op("payments", {
+            id,
+            date: today(),
+            type,
+            refId: ref,
+            amount: a,
+            note: nt.trim(),
+          });
+          if (type == "student") rc(id);
+        }
+      }
+
+      const V = {
+        st() {
+          const e = db.students.find((s) => s.id == eS) || {};
+          const defaultPrice = e.id ? N(e.price) : (P(e.grade || 1) || P(1));
+          return `<form class=c onsubmit="return addS(this)">
+            <b>${e.id ? "✏️ تعديل بيانات طالب" : "➕ تسجيل طالب جديد"}</b>
+            <input class=i name=n required placeholder="اسم الطالب الثلاثي" value="${E(e.name)}">
+            <div class=row>
+              <select class=i name=g onchange="if(!'${e.id}') this.form.p.value=P(this.value)">
+                ${G.map((g, i) => `<option value=${i + 1}${e.grade == i + 1 ? " selected" : ""}>${g}</option>`).join("")}
+              </select>
+              <select class=i name=k>
+                <option>تأسيس</option>
+                <option${e.track == "منهج عادي" ? " selected" : ""}>منهج عادي</option>
+              </select>
+            </div>
+            <select class=i name=t required>
+              ${TO(e.teacherId) || '<option value="">أضف معلماً أولاً</option>'}
+            </select>
+            <div class=row>
+              <input class=i name=p type=number min=0 value="${defaultPrice}" placeholder="السعر المتفق عليه (شيكل)">
+              <input class=i name=pp value="${E(e.parent)}" placeholder="رقم هاتف ولي الأمر">
+            </div>
+            <input class=i name=nt value="${E(e.note)}" placeholder="📝 ملاحظات السعر والاتفاق (مثال: خصم إخوة / دفع قسطين)">
+            <button class=b>حفظ الطالب</button>[cite: 2]${e.id ? ER(0, "eS") : ""}
+          </form>
+          <input class=i placeholder="🔍 بحث عن طالب بالاسم أو الملاحظة..." oninput="qs=this.value;ls.innerHTML=SL()">
+          <div id=ls>${SL()}</div>`;
+        },
+
+        te() {
+          const e = db.teachers.find((t) => t.id == eT) || {};
+          return `<form class=c onsubmit="return addT(this)">
+            <b>${e.id ? "تعديل معلم" : "إضافة معلم"}</b>
+            <input class=i name=n required placeholder="الاسم" value="${E(e.name)}">
+            <div class=row>
+              <input class=i name=ph placeholder="الهاتف" value="${E(e.phone)}">
+              <input class=i name=sb placeholder="المادة" value="${E(e.subject)}">
+            </div>
+            <button class=b>حفظ</button>${e.id ? ER(0, "eT") : ""}
+          </form>
+          <input class=i placeholder="🔍 بحث عن معلم..." oninput="qs=this.value;ls.innerHTML=TL()">
+          <div id=ls>${TL()}</div>`;
+        },
+
+        sc() {
+          return (
+            `<form class=c onsubmit="return addC(this)"><b>إضافة حصة للجدول</b><select class=i name=t required>${TO()}</select><div class=row><select class=i name=d>${D.map((d) => `<option>${d}</option>`).join("")}</select><input class=i name=tm type=time required></div><input class=i name=nt placeholder="ملاحظة (صف/مادة/قاعة)"><button class=b>حفظ الحصة</button></form>` +
+            D.map((d) => {
+              const l = db.schedule
+                .filter((x) => x.day == d)
+                .sort((a, b) => String(a.time).localeCompare(b.time));
+              return l.length
+                ? `<div class=c><b class=k>📍 ${d}</b>` +
+                    l
+                      .map(
+                        (x) =>
+                          `<br>🕒 ${E(x.time)} — <b>${E(tn(x.teacherId))}</b> <small>(${E(x.note)})</small> <button class="b s r" onclick="del('schedule','${x.id}')">✕</button>`,
+                      )
+                      .join("") +
+                    "</div>"
+                : "";
+            }).join("")
+          );
+        },
+
+        pa() {
+          const iS = sum(db.payments.filter((p) => p.type == "student")),
+            oT = sum(db.payments.filter((p) => p.type == "teacher")),
+            td = (iS * pct()) / 100;
+
+          // فلترة قائمة طلاب المدفوعات
+          const studentLedger = db.students
+            .filter((s) => {
+              const matchesSearch = (s.name + (s.parent || "") + (s.note || "")).includes(pq);
+              const p = paidS(s.id);
+              const rem = N(s.price) - p;
+              if (pFilter == "rem") return matchesSearch && rem > 0;
+              if (pFilter == "done") return matchesSearch && rem <= 0;
+              return matchesSearch;
+            })
+            .map((s) => {
+              const pList = studentPayments(s.id);
+              const totalPaid = sum(pList);
+              const rem = N(s.price) - totalPaid;
+
+              const historyHtml = pList.length
+                ? pList
+                    .map(
+                      (p) => `<div class="pay-item">
+                        <span>📅 <b>${E(p.date)}</b> — <b style="color:#059669">${N(p.amount)} ₪</b> ${p.note ? `<small>(${E(p.note)})</small>` : ""}</span>
+                        <div>
+                          <button class="b s g" onclick="rc('${p.id}')">🧾 إيصال</button>
+                          <button class="b s r" onclick="del('payments','${p.id}')">✕</button>
+                        </div>
+                      </div>`,
+                    )
+                    .join("")
+                : `<div style="color:#94a3b8;font-size:11px">لا توجد دفعات مسجلة بعد</div>`;
+
+              return `<div class=c>
+                <div style="display:flex;justify-content:space-between;align-items:start">
+                  <div>
+                    <span class=k style="font-size:15px">${E(s.name)}</span> 
+                    <small>(${G[(s.grade || 1) - 1] || ""})</small>
+                  </div>
+                  <button class="b s g" onclick="pay('student','${s.id}')">+ إضافة دفعة</button>
+                </div>
+                <div>الاتفاق: <b>${N(s.price)} ₪</b> | المدفوع: <b style="color:#059669">${totalPaid} ₪</b> | المتبقي: <b style="color:${rem > 0 ? "#dc2626" : "#059669"}">${rem} ₪</b></div>
+                ${s.note ? `<div class="badge-note">📝 ملاحظات الاتفاق: ${E(s.note)}</div>` : ""}
+                
+                <div class="pay-history">
+                  <div style="font-weight:bold;margin-bottom:4px;font-size:11px;color:#003366">📋 سجل الدفعات التفصيلي:</div>
+                  ${historyHtml}
+                </div>
+              </div>`;
+            })
+            .join("");
+
+          return (
+            `<div id=rp>${rep()}</div>
+            <div class=c>
+              <b>💰 إجمالي صندوق المركز</b><br>
+              المقبوض من الطلاب: <b>${iS} ₪</b><br>
+              حصة المعلمين (${pct()}%): <b>${td.toFixed(0)} ₪</b> | حصة الإدارة (${100 - pct()}%): <b>${(iS - td).toFixed(0)} ₪</b><br>
+              المصروف للمعلمين: <b>${oT} ₪</b> | صافي الرصيد الحالي: <b style="color:#059669">${iS - oT} ₪</b>
+            </div>
+            
+            <div class=c>
+              <b>🔎 كشف حساب ومدفوعات الطلاب</b>
+              <input class=i placeholder="🔍 بحث باسم الطالب أو الملاحظة..." value="${E(pq)}" oninput="pq=this.value;render()">
+              <div class=row style="margin-bottom:8px">
+                <button class="b s ${pFilter == "all" ? "g" : ""}" onclick="pFilter='all';render()">الكل</button>
+                <button class="b s ${pFilter == "rem" ? "g" : ""}" onclick="pFilter='rem';render()">عليهم متبقي</button>
+                <button class="b s ${pFilter == "done" ? "g" : ""}" onclick="pFilter='done';render()">خالصين</button>
+              </div>
+            </div>
+            <div>${studentLedger || '<div class=c>لا يوجد طلاب مطابقين للبحث</div>'}</div>`
+          );
+        },
+
+        se() {
+          return (
+            `<form class=c onsubmit="return saveSet(this)">
+              <b>نسبة المعلم من الدخل %</b>
+              <input class=i name=pct type=number min=0 max=100 value="${pct()}" oninput="ap.textContent=100-this.value">
+              <small>حصة إدارة المركز: <span id=ap>${100 - pct()}</span>%</small>
+              <br><br>
+              <b>📌 التسعيرة الافتراضية لكل صف (شيكل)</b>
+              <small style="display:block;margin-bottom:6px">تظهر هذه التسعيرة تلقائياً عند اختيار الصف أثناء تسجيل طالب جديد.</small>` +
+            G.map(
+              (g, i) =>
+                `<label style="display:block;margin-bottom:4px"><small><b>${g}:</b></small><input class=i name=p${i + 1} type=number min=0 value="${P(i + 1)}"></label>`,
+            ).join("") +
+            `<br><button class=b>حفظ الإعدادات والتسعير</button></form>`
+          );
+        },
+      };
+
+      function render() {
+        nv.innerHTML = TABS.map(
+          (t) =>
+            `<button class="${t[0] == tab ? "on" : ""}" onclick="tab='${t[0]}';qs='';eS='';eT='';render()">${t[1]}</button>`,
+        ).join("");
+
+        st.textContent = !navigator.onLine
+          ? "🔴 أوفلاين"
+          : q.length
+            ? "⏳ بانتظار المزامنة: " + q.length
+            : "🟢 متزامن مع السحابة";
+
+        if (
+          !document.activeElement ||
+          !/INPUT|SELECT/.test(document.activeElement.tagName) ||
+          document.activeElement.form == null
+        )
+          v.innerHTML = V[tab]();
+      }
+
+      addEventListener("online", () => {
+        flush();
+        load();
+      });
+      addEventListener("offline", render);
+
+      render();
+      flush();
+      load();
+    </script>
+  </body>
+</html>
